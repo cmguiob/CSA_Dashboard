@@ -1,0 +1,231 @@
+---
+title: "Dashboard Q1 - Practices"
+subtitle: "Labelled and interactive alluvial/sankey plots"
+author: "Carlos Guío"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: journal
+    highlight: tango
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include = FALSE}
+
+knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "75%")
+
+```
+
+
+
+```{r read_files, include = TRUE, echo = TRUE}
+
+library(tidyverse)
+
+Q1_practices <- read_csv(here::here("Data","EU-IFAD","Q1_practices.csv")) %>%
+  select(year,
+         location_type, 
+         location_name, 
+         farmer_id,
+         gender = farmer_gender,
+         practice_type,
+         exposure_weather,
+         adopted_cases,
+         drivers) %>%
+  filter(!is.na(drivers)) %>%
+  mutate(option = "Practices",
+        farmer_id = case_when(
+               farmer_id == "337a45e573817fba21d251ecc3a37523e14cc62d073" & 
+               gender == "Female" ~ "337a45e573817fba21d251ecc3a37523e14cc62d073_F",
+               farmer_id == "3e2a4c557a0a5277638e42df23b17bd63eb41858faa" & 
+               gender == "Female" ~ "3e2a4c557a0a5277638e42df23b17bd63eb41858faa_F",
+               farmer_id == "4e6a1f557611aec6b347a05cde3a1e093fb88e883a0" & 
+               gender == "Female" ~ "4e6a1f557611aec6b347a05cde3a1e093fb88e883a0_F",
+               farmer_id == "533a330570d0a9e20fdd55e40993645a7c9838e11b0" & 
+               gender == "Female" ~ "533a330570d0a9e20fdd55e40993645a7c9838e11b0_F",
+               farmer_id == "27fa75957420473f9ad14deb5ed9b7701031f701149" & 
+               gender == "Female" ~ "27fa75957420473f9ad14deb5ed9b7701031f701149_F",
+               farmer_id == "a75acb457efe9fb18b082f3a52d2dad46a69a42cf8e" & 
+               gender == "Female" ~ "a75acb457efe9fb18b082f3a52d2dad46a69a42cf8e_F",
+               farmer_id == "112a7c157220d8de79f29b9ac7bf6af20daa0a05983" & 
+               gender == "Female" ~ "112a7c157220d8de79f29b9ac7bf6af20daa0a05983_F",
+               farmer_id == "fd7a65f575e4ac103cbe3b6832d559cbc199d82101b" & 
+               gender == "Female" ~ "fd7a65f575e4ac103cbe3b6832d559cbc199d82101b_F",
+               TRUE ~ farmer_id),
+         practice_type = str_to_sentence(practice_type),
+        location_type = str_to_sentence(location_type)) %>%
+    mutate_if(is.character,as.factor) 
+
+Q1_services <- read_csv(here::here("Data","EU-IFAD","Q1_services.csv")) %>%
+  select(year,
+         location_type, 
+         location_name, 
+         farmer_id,
+         gender = farmer_gender,
+         practice_type = subtype,
+         exposure_weather,
+         adopted_cases,
+         drivers) %>%
+    # Remove rows for cases where driver is NA (adopted_case is HEARD about it)
+  filter(!is.na(drivers)) %>%
+  mutate(option = "Services",
+         farmer_id = case_when(
+               farmer_id == "337a45e573817fba21d251ecc3a37523e14cc62d073" & 
+               gender == "Female" ~ "337a45e573817fba21d251ecc3a37523e14cc62d073_F",
+               farmer_id == "3e2a4c557a0a5277638e42df23b17bd63eb41858faa" & 
+               gender == "Female" ~ "3e2a4c557a0a5277638e42df23b17bd63eb41858faa_F",
+               farmer_id == "4e6a1f557611aec6b347a05cde3a1e093fb88e883a0" & 
+               gender == "Female" ~ "4e6a1f557611aec6b347a05cde3a1e093fb88e883a0_F",
+               farmer_id == "533a330570d0a9e20fdd55e40993645a7c9838e11b0" & 
+               gender == "Female" ~ "533a330570d0a9e20fdd55e40993645a7c9838e11b0_F",
+               farmer_id == "27fa75957420473f9ad14deb5ed9b7701031f701149" & 
+               gender == "Female" ~ "27fa75957420473f9ad14deb5ed9b7701031f701149_F",
+               farmer_id == "a75acb457efe9fb18b082f3a52d2dad46a69a42cf8e" & 
+               gender == "Female" ~ "a75acb457efe9fb18b082f3a52d2dad46a69a42cf8e_F",
+               farmer_id == "112a7c157220d8de79f29b9ac7bf6af20daa0a05983" & 
+               gender == "Female" ~ "112a7c157220d8de79f29b9ac7bf6af20daa0a05983_F",
+               farmer_id == "fd7a65f575e4ac103cbe3b6832d559cbc199d82101b" & 
+               gender == "Female" ~ "fd7a65f575e4ac103cbe3b6832d559cbc199d82101b_F",
+               TRUE ~ farmer_id),
+         practice_type = str_to_sentence(practice_type),
+         location_type = str_to_sentence(location_type))%>%
+  mutate_if(is.character,as.factor)
+
+Q1_options <- bind_rows(Q1_practices, Q1_services)
+
+
+
+```
+
+
+```{r export_data}
+
+write_csv(Q1_options, here::here("Data","EU-IFAD","trends.csv"))
+
+```
+
+
+### ggplot::ggsankey 
+
+This library is supported by plotly for conversion!!
+
+[Best reference for ggsankey](https://github.com/davidsjoberg/ggsankey)
+
+
+[Best help for labels](https://stackoverflow.com/questions/67180502/sankey-diagram-labels-in-r)
+
+```{r plot_sankey, include = TRUE, echo = TRUE}
+
+library(ggsankey)
+library(RColorBrewer)
+library(showtext)
+
+showtext_auto()
+
+# Obtener fuentes
+font_add_google(name = "Roboto Condensed", family= "robotoc")
+font_add_google(name = "Roboto", family= "roboto")
+
+dat <- Q1_options %>%
+  select(location_type, 
+         location_name, 
+         head, 
+         hh_address, 
+         hh_head_gender, 
+         adopted_cases,
+         drivers,
+         practice_type,
+         exposure_weather,
+         option)  %>%
+  # Just data from heads of households
+  filter(head == "yes") %>%
+  # Remove rows for practices for which farmers didn't answer
+  filter(!is.na(adopted_cases)) %>%
+  filter(!is.na(drivers)) %>%
+  # Filter by location type (this will be a selection box in PBI)
+  filter(location_type == "site") %>%
+  filter(location_name == "Fakara") %>%
+  filter(option == "Services") %>%
+  # Create new variables
+  mutate(location_gender = paste(location_name, hh_head_gender, sep = "\n")) %>%
+  mutate(adoption_gender = paste(adopted_cases, hh_head_gender, sep = "\n")) %>%
+  distinct() %>%
+  # Change structure to long
+  make_long(location_gender, exposure_weather, adoption_gender, drivers, practice_type) %>%
+  mutate_if(is.character,as.factor)%>% 
+  mutate(node = fct_rev(node),
+         next_node = fct_rev(next_node))
+
+dat_n <- dat %>% 
+  filter(!is.na(node)) %>% 
+  group_by(x, node)%>% 
+  summarise(count = n()) %>%
+  ungroup() %>%
+  group_by(x) %>%
+  mutate(percentage = round(count*100/sum(count),1))
+
+
+p_sankey <- dat %>% 
+  left_join(dat_n) %>%
+  ggplot(aes(x = x, 
+          next_x = next_x, 
+          node = node, 
+          next_node = next_node,
+          fill = (node))) +
+  geom_sankey(flow.alpha = 0.6, node.color = "gray30")+
+  # Carify that household replies are > than households because some households gave information about each practice
+    scale_x_discrete(labels = c("Household\n replies",
+                              "Exposure to\n weather shocks\n",
+                              "Adoption \n cases",
+                              "Drivers\n\n",
+                              "Practice\n ID\n"),
+                   position = "top") +
+  scale_fill_hue(l = 70, c = 40)+
+  theme_minimal()+
+  theme(panel.grid = element_blank(),
+        plot.background = element_rect(fill = "#faf9f5", color = "#faf9f5"),
+        legend.position = "none",
+        axis.text.x = element_text(size = 12, color = "#C3C2BE", vjust = 10),
+        axis.text.y = element_blank(),
+        axis.title = element_blank())
+  
+p_sankey  +
+  # Clarify somewhere: gender is related to head of household
+  geom_sankey_text(aes(label = percentage), 
+                   size = 3, 
+                   vjust = -2.5,
+                   family = "robotoc",
+                   color = "grey20",
+                   check_overlap = TRUE) +
+  geom_sankey_label(size = 3.5, 
+                   color = "white",
+                   family = "robotoc",
+                   fontface = "bold",
+                   aes(label = node))
+
+
+```
+
+
+
+
+### Turning ggplotly
+
+[Best source to adjust ggplotly](https://plotly-r.com/improving-ggplotly.html)
+
+```{r plot_plotly, include = TRUE, echo = TRUE}
+
+library(plotly)
+
+ply_sankey <- ggplotly(p_sankey) %>% layout(plot_bgcolor = "#faf9f5")
+
+ply_sankey 
+
+
+#For transparent background try
+#layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+
+```
+
+

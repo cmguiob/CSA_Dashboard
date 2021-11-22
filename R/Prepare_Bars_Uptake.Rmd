@@ -1,0 +1,363 @@
+---
+title: "Dashbaord Uptake"
+subtitle: "Treemap/mosaic plots"
+author: "Carlos Guío"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: journal
+    highlight: tango
+editor_options: 
+  chunk_output_type: inline
+---
+
+The goal of this plot is to show which practices are available at a given site and the percentage of this practices that were adopted, disadopted and not adopted by male/female headed households.
+
+
+```{r setup}
+knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "75%")
+```
+
+
+
+```{r load, echo=FALSE}
+
+library(tidyverse)
+
+#Read
+Q1_practices_w <- read_csv(here::here("Data","EU-IFAD","Q1_practices.csv")) %>%
+  select(year,
+         location_type, 
+         location_name, 
+         farmer_id,
+         gender = farmer_gender,
+         practice_type,
+         subtype,
+         adopted_cases,
+         description) %>%
+  pivot_wider(names_from = location_type, values_from = location_name) %>%
+  #unnest columnas que quedaron anidadas
+  unchop(everything()) %>%
+  select(-community) %>%
+  distinct() %>%
+  mutate(option = "Practices",
+         subtype = case_when(
+                       subtype == "Integrated nutrient management" ~ "Integrated management",
+                       subtype == "Terraces biological measures" ~ "Terraces (bio-measures)",
+                       TRUE ~ subtype),
+        farmer_id = case_when(
+               farmer_id == "337a45e573817fba21d251ecc3a37523e14cc62d073" & 
+               gender == "Female" ~ "337a45e573817fba21d251ecc3a37523e14cc62d073_F",
+               farmer_id == "3e2a4c557a0a5277638e42df23b17bd63eb41858faa" & 
+               gender == "Female" ~ "3e2a4c557a0a5277638e42df23b17bd63eb41858faa_F",
+               farmer_id == "4e6a1f557611aec6b347a05cde3a1e093fb88e883a0" & 
+               gender == "Female" ~ "4e6a1f557611aec6b347a05cde3a1e093fb88e883a0_F",
+               farmer_id == "533a330570d0a9e20fdd55e40993645a7c9838e11b0" & 
+               gender == "Female" ~ "533a330570d0a9e20fdd55e40993645a7c9838e11b0_F",
+               farmer_id == "27fa75957420473f9ad14deb5ed9b7701031f701149" & 
+               gender == "Female" ~ "27fa75957420473f9ad14deb5ed9b7701031f701149_F",
+               farmer_id == "a75acb457efe9fb18b082f3a52d2dad46a69a42cf8e" & 
+               gender == "Female" ~ "a75acb457efe9fb18b082f3a52d2dad46a69a42cf8e_F",
+               farmer_id == "112a7c157220d8de79f29b9ac7bf6af20daa0a05983" & 
+               gender == "Female" ~ "112a7c157220d8de79f29b9ac7bf6af20daa0a05983_F",
+               farmer_id == "fd7a65f575e4ac103cbe3b6832d559cbc199d82101b" & 
+               gender == "Female" ~ "fd7a65f575e4ac103cbe3b6832d559cbc199d82101b_F",
+               TRUE ~ farmer_id),
+         practice_type = str_to_sentence(practice_type),
+         subtype =str_to_sentence(subtype))
+
+
+  # Code to clean names
+  #%>%
+  # Replace anything after quotes
+  #mutate(practice = str_replace(practice, "(?<=[\"]).+", "")) %>%
+  # Replace quotes
+  #mutate(practice = str_replace(practice, "[\"]", "")) %>%
+  # Format to sentence with first letter uppercase
+  #mutate(practice = str_to_sentence(practice))%>%
+  # Remove period at the end
+  #mutate(practice = str_replace(practice, "[\\.]", "")) %>%
+  # Remove space at the end
+  #mutate(practice = str_trim(practice)) %>%
+  #Replace anything after open parentheses
+  #mutate(practice_gen = str_replace(practice, "(?<=\\().+", "")) %>%
+  #Replace parentheses
+  #mutate(practice_gen = str_replace(practice_gen, "\\(", "")) %>%
+  # Replace anything after colon
+  #mutate(practice_gen = str_replace(practice_gen, "(?<=\\:).+", "")) %>%
+  #Replace colon
+  #mutate(practice_gen = str_replace(practice_gen, "\\:", "")) %>%
+  # Remove text after dash and space
+  #mutate(practice_gen = str_replace(practice_gen, "(?<=[\\-])\\s.+", "")) %>%
+  #Remove dash at the end of sentence
+  #mutate(practice_gen = str_replace(practice_gen, "[\\-]$", "")) %>%
+  #Remove space at the end
+  #mutate(practice_gen = str_trim(practice_gen))
+
+Q1_services_w <- read_csv(here::here("Data","EU-IFAD","Q1_services.csv")) %>%
+  select(year,
+         location_type, 
+         location_name, 
+         farmer_id,
+         gender = farmer_gender,
+         practice_type,
+         subtype,
+         adopted_cases,
+         description) %>%
+  filter(practice_type != "No service") %>%
+  pivot_wider(names_from = location_type, values_from = location_name) %>%
+  #unnest columnas que quedaron anidadas
+  unchop(everything()) %>%
+  select(-community) %>%
+  distinct() %>%
+  mutate(option = "Services",
+         description = case_when(is.na(description)~ "No description available",
+                                 TRUE ~ description),
+         farmer_id = case_when(
+               farmer_id == "337a45e573817fba21d251ecc3a37523e14cc62d073" & 
+               gender == "Female" ~ "337a45e573817fba21d251ecc3a37523e14cc62d073_F",
+               farmer_id == "3e2a4c557a0a5277638e42df23b17bd63eb41858faa" & 
+               gender == "Female" ~ "3e2a4c557a0a5277638e42df23b17bd63eb41858faa_F",
+               farmer_id == "4e6a1f557611aec6b347a05cde3a1e093fb88e883a0" & 
+               gender == "Female" ~ "4e6a1f557611aec6b347a05cde3a1e093fb88e883a0_F",
+               farmer_id == "533a330570d0a9e20fdd55e40993645a7c9838e11b0" & 
+               gender == "Female" ~ "533a330570d0a9e20fdd55e40993645a7c9838e11b0_F",
+               farmer_id == "27fa75957420473f9ad14deb5ed9b7701031f701149" & 
+               gender == "Female" ~ "27fa75957420473f9ad14deb5ed9b7701031f701149_F",
+               farmer_id == "a75acb457efe9fb18b082f3a52d2dad46a69a42cf8e" & 
+               gender == "Female" ~ "a75acb457efe9fb18b082f3a52d2dad46a69a42cf8e_F",
+               farmer_id == "112a7c157220d8de79f29b9ac7bf6af20daa0a05983" & 
+               gender == "Female" ~ "112a7c157220d8de79f29b9ac7bf6af20daa0a05983_F",
+               farmer_id == "fd7a65f575e4ac103cbe3b6832d559cbc199d82101b" & 
+               gender == "Female" ~ "fd7a65f575e4ac103cbe3b6832d559cbc199d82101b_F",
+               TRUE ~ farmer_id),
+         practice_type = str_to_sentence(practice_type),
+         subtype = str_to_sentence(subtype))
+
+Q1_options_w <- bind_rows(Q1_practices_w, Q1_services_w)
+
+coordinates <- read_csv(here::here("Data","EU-IFAD","CCAFS_Villages _coordinates_GPS.csv"))
+
+
+```
+
+```{r prep, include = TRUE, echo = TRUE}
+
+#Summary number of female and male headed households by site
+
+gender_site <- Q1_options_w %>%
+  filter(!is.na(gender)) %>%
+  select(site, farmer_id, gender) %>%
+  group_by(site, gender) %>%
+  distinct(farmer_id) %>% 
+  summarise(n_site = n()) %>%
+  ungroup() %>%
+  # Extra lines to account for zero 
+  pivot_wider(names_from = gender, values_from = n_site) %>%
+  mutate(Female = case_when(is.na(Female) ~ 0,
+                                  TRUE ~ as.double(Female)),
+         Male = case_when(is.na(Male) ~ 0,
+                                TRUE ~ as.double(Male))) %>%
+  pivot_longer(cols = c("Female", "Male"), names_to = "gender", values_to = "n_site")
+
+
+
+# Summary practices
+practice_summ <- Q1_options_w %>%
+  filter(!is.na(gender)) %>% 
+  filter(!is.na(adopted_cases)) %>% 
+  group_by(option, 
+           year, 
+           site, 
+           practice_type, 
+           subtype, 
+           description, 
+           adopted_cases) %>% 
+  count(gender) %>%
+  left_join(gender_site, by = c("site", "gender"))%>%
+  ungroup() %>%
+  group_by(option, site, practice_type, gender, n_site) %>% 
+  # Ad da new row by group
+  #group_modify(~ add_row(.data = .x, adopted_cases = "Other")) %>%
+  #mutate(n = case_when(is.na(n) & adopted_cases == "Other" ~ n_site - sum(n, na.rm = TRUE),
+  #                     TRUE ~ as.double(n))) %>%
+  mutate(percentage = case_when(n_site != 0 ~ round(n*100/n_site, 1),
+                                       TRUE ~ as.double(0))) 
+
+practice_summ %>% filter(subtype %in% c("Tree planting"))
+
+uptake_dat <- coordinates %>%
+  #Copute coordinates for site
+  group_by(country, site) %>%
+  mutate(latitude_site = mean(latitude),
+         longitude_site = mean(longitude)) %>%
+  ungroup() %>%
+  distinct(site, .keep_all = TRUE) %>%
+  #Remove columns from communities
+  select(-community, -longitude, -latitude)%>%
+  #Join with details from communities by site and summaries
+  right_join(practice_summ, by = "site") %>%
+  group_by(option, year, site, practice_type, subtype, description, gender, n_site) 
+
+uptake_dat %>% filter(subtype %in% c("Terraces"))
+
+
+```
+
+Export table for use in PBI
+
+```{r save}
+
+write_csv(uptake_dat, here::here("Data","EU-IFAD","uptake.csv"))
+
+```
+
+
+According to Claus Wilke, humans are better perceiving distances over areas. Therefore, a bar chart is decoded easier than 
+
+```{r barplot, include = TRUE, echo = TRUE}
+
+library(tidyverse)
+library(ggplot2)
+library(ggrepel)
+
+sankey_dat <- uptake_dat %>% 
+  filter(subtype %in% c("Tree planting")) %>%
+  filter(n != 0)%>%
+  mutate(gender_n = paste(substr(gender,1,1), paste0("(",n_site,")"), sep = "\n"))%>%
+  arrange(year, site, practice_type, subtype, gender, desc(adopted_cases)) %>%
+  mutate(pos = cumsum(n) - (0.5 * n)) %>%
+  ungroup() %>%
+  group_by(site) %>%
+  mutate(x = case_when(any(str_detect(gender, "Female-headed"))& gender == "Female-headed"~ 0.5,
+                       any(str_detect(gender, "Female-headed"))& gender == "Male-headed"~ 1.5,
+                       any(!str_detect(gender, "Female-headed"))& gender == "Male-headed"~ 0.5),
+         xend = case_when(any(str_detect(gender, "Female-headed"))& gender == "Female-headed"~ 1.5,
+                       any(str_detect(gender, "Female-headed"))& gender == "Male-headed"~ 2.5,
+                       any(!str_detect(gender, "Female-headed"))& gender == "Male-headed"~ 1.5))
+         
+  
+
+  ggplot(sankey_dat, aes(fill = adopted_cases, y = n, x = gender_n)) + 
+  geom_bar(position="stack", stat="identity")+
+  geom_label_repel(aes(label = paste(sprintf("%.1f", percentage),"%"), 
+                x = gender_n, 
+                y = pos), 
+            size = 3.5,
+            alpha = 0.6,
+            force = 0.1,
+            box.padding = 0.1,
+            direction = "x",
+            max.overlaps = Inf,
+            fill = "white")+
+  facet_grid(year ~ site, scales = "free_x", space = "free_x") +
+  geom_segment(data = sankey_dat, 
+               aes(x = x, 
+                   xend = xend, 
+                   y = n_site, 
+                   yend = n_site), 
+               linetype=2, color = "#B8B7B3")+
+  scale_y_continuous(labels = scales::percent_format()) +
+  #scale_fill_OkabeIto(order = c(3,4, 1,2))+
+  guides(fill = guide_legend(override.aes = list(size = 7)))+
+  theme_minimal()+
+  theme(panel.grid = element_blank(),
+        panel.background = element_rect(fill = "#faf9f5", color = "#ECEBE7" ),
+        plot.background = element_rect(fill = "#faf9f5", 
+                                       color = "#faf9f5"),
+        strip.background = element_rect(fill = "#ECEBE7", color = "#ECEBE7"),
+        legend.title = element_blank(),
+        legend.justification = "top",
+        legend.position = "left",
+        axis.title = element_blank(),
+        axis.text.y = element_blank()) 
+
+```
+
+Join with map
+
+```{r map, include = TRUE, echo = TRUE}
+
+library(ggplot2)
+library(tidyverse)
+library(ggrepel)
+
+world_data <- ggplot2::map_data('world')%>%
+  rename(country = region) %>%
+  select(-subregion) %>%
+  filter(country %in% uptake_dat$country)
+
+ggplot(data = world_data,
+       aes(x = long, 
+           y = lat)) +
+  geom_polygon(data = world_data,
+               aes(group = group),
+               color = "#faf9f5", 
+               fill = "#ECEBE7", 
+               size = 1) +
+  geom_point(data = uptake_dat %>% 
+               filter(subtype %in% c("Daily and sesonal")), 
+             aes(x = longitude_site, 
+                 y = latitude_site, 
+                 color = subtype),
+             shape = 19,
+             alpha = 0.8)+
+  geom_label_repel(data = uptake_dat %>% 
+               ungroup() %>%
+               filter(subtype %in% c("Daily and sesonal")) %>%
+               distinct(site, .keep_all = TRUE),
+                   aes(label = site,
+                       x = longitude_site, 
+                       y = latitude_site),
+                   size = 4,
+                   box.padding = 1,
+                   point.padding = 0,
+                   nudge_y = 0,
+                   max.overlaps = Inf,
+                   direction = "both",
+                   xlim = c(-Inf, Inf),
+                   alpha = 0.5)+
+guides(color = "none")+
+  theme_minimal()+
+  theme(panel.grid = element_blank(),
+        plot.background = element_rect(fill = "#faf9f5", 
+                                       color = "#faf9f5"),
+        axis.text = element_blank(),
+        axis.title = element_blank())+
+    coord_quickmap()
+
+
+```
+
+Descriptions in reactive text boxes
+
+```{r text, include = TRUE, echo = TRUE}
+
+library(tidyverse)
+library(ggplot2)
+library(ggtext)
+
+uptake_dat %>%
+filter(subtype %in% c("Agroforestry fallow")) %>%
+ ggplot() +
+  geom_textbox(
+    aes(x = 0.1, y = 1, label = description),
+    width = grid::unit(0.75, "npc"), # 73% of plot panel width
+    hjust = 0, 
+    vjust = 1,
+    size = 7,
+    fill = "#ECEBE7",
+    colour = "#5D5C58",
+    box.colour = "#5D5C58",
+  ) +
+  xlim(0, 1) + ylim(0, 1) +
+  theme_minimal()+
+  theme(panel.grid = element_blank(),
+        plot.background = element_rect(fill = "#faf9f5", 
+                                       color = "#faf9f5"),
+        axis.title = element_blank(),
+        axis.text = element_blank()) 
+
+
+```
+
