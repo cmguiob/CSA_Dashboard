@@ -1,10 +1,11 @@
-# A dashboard on Climate Smart Options at Climat Smart Villages
+# A dashboard on Climate Smart Agricultural (CSA) Options
 
-Dashboard to explore adoption and effects of climate smart agriculture practices and services. The data was collected by the International Center for Tropical Agriculture (CIAT) from 2017 to 2021 through the [geofarmer App](https://geofarmer.org/welcome).
+You will find here the data and code used to develop a dashboard that allwos to explore adoption and effects of CSA practices and services at Climate Smart Villages around the world. It is intended to help individuals and organizations in the design of climate mitigation and adaptation programs. The data was collected by the International Center for Tropical Agriculture (CIAT) from 2017 to 2021 through the [geofarmer App](https://geofarmer.org/welcome).
 
-The dashboard will be open and will allow interactivity to answer questions such as:
+The dashboard will be open and allow interactivity to answer questions such as:
 * Where did the experiments take place and what were they about?
-* Which practices were adopted, by whom, why, where and when?
-* What are the effects of adoption of climate smart options in small agricultural villages?
+* Which practices were adopted, by whom, where and when?
+* What are the drivers for adoption or dis-adoption of practices or the reasons for not using services?
+* What are the perceived effects of adopting CSA options in the livelihood, food security and gender equity of small agricultural villages?
 
 In this repository you will find some examples of the processed data and the R code used to create some of the visualizations, later embedded into a dashboard built and deployed in Power BI.
