@@ -8,4 +8,7 @@ The dashboard will be open and allow interactivity to answer questions such as:
 * What are the drivers for adoption or dis-adoption of practices or the reasons for not using services?
 * What are the perceived effects of adopting CSA options in the livelihood, food security and gender equity of small agricultural villages?
 
-In this repository you will find some examples of the processed data and the R code used to create some of the visualizations, later embedded into a dashboard built and deployed in Power BI.
+In this repository you will find:
+* [**Data**](https://github.com/cmguiob/CSA_Dashboard/tree/main/Data): downloaded from the geofarmer App and preprocessed to a tidy format.
+* [**R code**](https://github.com/cmguiob/CSA_Dashboard/tree/main/R): used to prepare the data for ingestion into Power BI and the one used within Power BI to creat the interactive visualizations.
+
