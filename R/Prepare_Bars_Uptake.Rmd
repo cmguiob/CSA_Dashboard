@@ -143,63 +143,7 @@ coordinates <- read_csv(here::here("Data","EU-IFAD","CCAFS_Villages _coordinates
 
 ```{r prep, include = TRUE, echo = TRUE}
 
-#Summary number of female and male headed households by site
 
-gender_site <- Q1_options_w %>%
-  filter(!is.na(gender)) %>%
-  select(site, farmer_id, gender) %>%
-  group_by(site, gender) %>%
-  distinct(farmer_id) %>% 
-  summarise(n_site = n()) %>%
-  ungroup() %>%
-  # Extra lines to account for zero 
-  pivot_wider(names_from = gender, values_from = n_site) %>%
-  mutate(Female = case_when(is.na(Female) ~ 0,
-                                  TRUE ~ as.double(Female)),
-         Male = case_when(is.na(Male) ~ 0,
-                                TRUE ~ as.double(Male))) %>%
-  pivot_longer(cols = c("Female", "Male"), names_to = "gender", values_to = "n_site")
-
-
-
-# Summary practices
-practice_summ <- Q1_options_w %>%
-  filter(!is.na(gender)) %>% 
-  filter(!is.na(adopted_cases)) %>% 
-  group_by(option, 
-           year, 
-           site, 
-           practice_type, 
-           subtype, 
-           description, 
-           adopted_cases) %>% 
-  count(gender) %>%
-  left_join(gender_site, by = c("site", "gender"))%>%
-  ungroup() %>%
-  group_by(option, site, practice_type, gender, n_site) %>% 
-  # Ad da new row by group
-  #group_modify(~ add_row(.data = .x, adopted_cases = "Other")) %>%
-  #mutate(n = case_when(is.na(n) & adopted_cases == "Other" ~ n_site - sum(n, na.rm = TRUE),
-  #                     TRUE ~ as.double(n))) %>%
-  mutate(percentage = case_when(n_site != 0 ~ round(n*100/n_site, 1),
-                                       TRUE ~ as.double(0))) 
-
-practice_summ %>% filter(subtype %in% c("Tree planting"))
-
-uptake_dat <- coordinates %>%
-  #Copute coordinates for site
-  group_by(country, site) %>%
-  mutate(latitude_site = mean(latitude),
-         longitude_site = mean(longitude)) %>%
-  ungroup() %>%
-  distinct(site, .keep_all = TRUE) %>%
-  #Remove columns from communities
-  select(-community, -longitude, -latitude)%>%
-  #Join with details from communities by site and summaries
-  right_join(practice_summ, by = "site") %>%
-  group_by(option, year, site, practice_type, subtype, description, gender, n_site) 
-
-uptake_dat %>% filter(subtype %in% c("Terraces"))
 
 
 ```

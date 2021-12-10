@@ -1,0 +1,292 @@
+---
+title: "Dashboard: Trends"
+subtitle: "Static and interactive alluvial/sankey plots"
+author: "Carlos Guío"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: journal
+    highlight: tango
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include = FALSE}
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "90%")
+
+```
+
+## Read and prepare Q1 datasets
+
+Q1 datasets are loaded by sourcing the `Prepare_Trends_Sankey.R`script. These datasets were designed to answer the questions:
+
+* Who adopted/disadopted practices and why?
+* Who accessed/used climate information services?
+
+The Q1_practices and Q1_services datasets were lightly processed in the to make them compatible.
+
+
+```{r source, echo = TRUE}
+library(here)
+library(devtools)
+
+source_url("https://raw.githubusercontent.com/cmguiob/CSA_Dashboard/main/R/Prepare_Trends_Sankey.R")
+
+```
+
+## Visualization
+
+The following chunks have code to plot qualitative diagrams that visualize flows of data between categories, explained at the bottom of each plot. It allows to understand the connection between farmer gender, exposure to weather shocks, implementation cases of practices (or use cases of services), drivers of implementation (or reasons to use services) and practices (or services). Since a given farmer can implement (or use) more than one CSA option (practice or CIS), the thickness of the flows corresponds to farmer replies,  rather than farmers: for example, a farmer can reply twice when he/she adopts two practices, or when he/she implements and stop implementing a given practice.
+
+### First visualization choice: sankey plot with `ggsankey` (not on CRAN)
+
+This library is supported by plotly for conversion!! (see below)
+
+[Best reference for ggsankey](https://github.com/davidsjoberg/ggsankey)
+[Best help for labels](https://stackoverflow.com/questions/67180502/sankey-diagram-labels-in-r)
+
+In the first chunk of this section the code creates a function to create a sankey plot for a location and CSA_category of choice.
+
+```{r function_ggsankey, include = TRUE, echo = TRUE}
+
+f_ggsankey <- function(dataset = Q1_options, location, CSA_category, year_1, year_2){
+  
+  library(tidyverse)
+  library(ggsankey)
+
+
+  # Error messages
+   if (CSA_category != c("Practices", "Services")) 
+     stop("use either Practices or Services as CSA_category")
+  
+  if (!location %in% Q1_options$location_name) 
+    stop("assign a valid value to location")
+  
+  years <- Q1_options %>% 
+           filter(location_name == location, option == CSA_category) %>% 
+           select(year) %>%
+           distinct()
+  
+  if (!any(range(years) %in% seq(year_1, year_2, by=1))) 
+      stop("assign a valid year interval to the surveyed location")
+  
+  
+  # Prepare data for ggsankey
+  dat <- dataset %>%
+      # Filter by location type (this will be a selection box in PBI)
+  filter(location_name == location) %>%
+  filter(option == CSA_category) %>%
+  filter(year >= year_1 & year <= year_2 ) %>%
+  filter(practice_type == practice_type) %>%
+  select(location_type, 
+         location_name, 
+         farmer_id, 
+         gender, 
+         adopted_cases,
+         drivers,
+         practice_type,
+         exposure_weather,
+         option)  %>%
+  # Remove rows for practices for which farmers didn't answer
+  filter(!is.na(adopted_cases),
+         !is.na(exposure_weather)) %>%
+  mutate(location_gender = paste(location_name, paste0("(",substr(gender,1,1),")"))) %>%
+  mutate(adoption_gender = paste(adopted_cases, paste0("(",substr(gender,1,1),")"))) %>%
+  distinct()%>%
+  make_long(location_gender, exposure_weather, adoption_gender, drivers, practice_type) %>%
+  mutate(node = fct_rev(node),
+         next_node = fct_rev(next_node))
+
+  # Optional: data to label with n or percentage
+  dat_n <- dat %>% 
+  filter(!is.na(node)) %>% 
+  group_by(x, node)%>% 
+  summarise(count = n()) %>%
+  ungroup() 
+  # Use the code below to include percentage
+  #%>%
+  #group_by(x) %>%
+  #mutate(percentage = round(count*100/sum(count),1))
+
+  # Pot
+  dat %>% 
+  left_join(dat_n) %>%
+  ggplot(aes(x = x, 
+             next_x = next_x, 
+             node = node, 
+             next_node = next_node,
+             fill = node)) +
+  geom_sankey(flow.alpha = 0.5,
+              width = 0.04)+
+  # Optional code to display n or percentage
+  #geom_sankey_text(aes(label = count), 
+  #                 size = 3.5, 
+  #                 vjust = -1.7,
+  #                 color = "#5D5C58",
+  #                 check_overlap = TRUE) +
+  scale_x_discrete(labels = c("Farmers' replies\n by location (gender)",
+                              "Exposure to\n weather shocks",
+                              "Implementation / use\n cases (gender)",
+                              "Drivers / Reasons\n",
+                              "CSA option\n"))+
+  geom_sankey_text(size = 2.5, 
+                   color = "#5D5C58",
+                   check_overlap= FALSE,
+                   aes(label = node))+
+  scale_fill_hue(l = 70, c = 45, h = c(0, 360))+
+  theme_minimal()+
+  theme(panel.grid = element_blank(),
+        # Optional code to use plot background like in the dashboard
+        #plot.background = element_rect(fill = "#faf9f5", color = "#faf9f5"),
+        legend.position = "none",
+        axis.text.x = element_text(
+            size = 10, 
+            color = "#B8B7B3", 
+            vjust = 5),
+        axis.text.y = element_blank(),
+        axis.title = element_blank())
+
+}
+
+```
+
+
+### Use the function to create a ggsankey plot 
+
+The argumens of the function take in values similar to the drop down menus used in the PBI-dashboard.To export it, first store it as an object.
+
+```{r plot_ggsankey, include= TRUE, echo = TRUE}
+
+p_sankey <- f_ggsankey(location = "Doyogena", CSA_category = "Practices", year_1 = 2018, year_2 = 2021)
+
+p_sankey
+
+# Export
+#ggsave(file = "p_sankey.png", plot = p_sankey, device = "png", type = "cairo", path = "Input a path from your PC, dpi = 300, width = 9.5, height = 5)
+
+```
+
+### Make it interactive with `ggplotly`
+
+`ggplotly`is a CRAN package that allows to transform static ggplot into interactive plots. It is not currently compatible with PBI though.
+
+[Best source to adjust ggplotly](https://plotly-r.com/improving-ggplotly.html)
+
+```{r interactive_plotly, echo = TRUE, eval = FALSE}
+
+library(plotly)
+
+ply_sankey <- ggplotly(p_sankey) %>% layout(plot_bgcolor = "#faf9f5")
+
+ply_sankey 
+
+#For transparent background try
+#layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+
+```
+
+
+### Second visualization choice: interactive sankey diagram with `highcharter` (CRAN)
+
+`highcharter` is a CRAN package that allows to create interactive sankey plots. Nevertheless, these are not currently compatible with PBI.
+
+```{r interactive_highcharter, echo = TRUE, eval=FALSE}
+
+library(highcharter)
+
+# Prepare data for highcharter
+dat_high <-  Q1_options %>%
+  select(location_type, 
+         location_name, 
+         farmer_id, 
+         gender, 
+         adopted_cases,
+         drivers,
+         practice_type,
+         exposure_weather,
+         option)  %>%
+  # Filter by location type (this will be a selection box in PBI)
+  filter(location_type == "Site") %>%
+  filter(location_name == "Fakara") %>%
+  filter(option == "Services") %>%
+  # Remove rows for practices for which farmers didn't answer
+  filter(!is.na(adopted_cases),
+         !is.na(exposure_weather)) %>%
+  mutate(location_gender = factor(paste(location_name, paste0("(",substr(gender,1,1),")")))) %>%
+  mutate(adoption_gender = factor(paste(adopted_cases, paste0("(",substr(gender,1,1),")")))) %>%
+  #filter(!is.na(drivers)) %>%
+  distinct() %>%
+  select(location_gender, exposure_weather, adoption_gender, drivers, practice_type)
+
+hchart(data_to_sankey(dat_high), "sankey")
+```
+
+### Third choice: alluvial plot with `ggalluvial` (CRAN)
+
+Alluvial plots are similar to sankey plots. They differ in the fixed "box" display of the flows and also in the coloring options, which are devised to follow a given flow from start to end of the categories.
+
+[Best source for ggalluvial](https://cran.r-project.org/web/packages/ggalluvial/vignettes/ggalluvial.html)
+
+```{r plot_ggalluvial, echo = TRUE, eval=FALSE}
+library(ggalluvial)
+
+# Prepare data for ggalluvial
+dat_ggal <-  Q1_options %>%
+  select(location_type, 
+         location_name, 
+         farmer_id, 
+         gender, 
+         adopted_cases,
+         drivers,
+         practice_type,
+         exposure_weather,
+         option)  %>%
+    # Filter by location type (this will be a selection box in PBI)
+  filter(location_type == "Site") %>%
+  filter(location_name == "Fakara") %>%
+  filter(option == "Services") %>%
+  # Remove rows for practices for which farmers didn't answer
+  filter(!is.na(adopted_cases),
+         !is.na(exposure_weather)) %>%
+  #filter(!is.na(drivers)) %>%
+  mutate(location_gender = paste(location_name, paste0("(",substr(gender,1,1),")"))) %>%
+  mutate(gender, adoption_gender = paste(adopted_cases, paste0("(",substr(gender,1,1),")"))) %>%
+  distinct() %>%
+  count(location_gender, exposure_weather, adopted_cases, drivers, practice_type)
+
+
+# Plot alluvial
+p_alluv <- ggplot(data = dat_ggal,
+       aes(y = n, 
+           axis1 = location_gender,
+           axis1 = exposure_weather, 
+           axis2 = adopted_cases,
+           axis3 = drivers,
+           axis4 = practice_type)) +
+  geom_alluvium(aes(fill = location_gender)) + #or geom_flow?
+  geom_stratum(width = 1/6, alpha = 0.5) +
+  geom_label(stat = "stratum", aes(label = after_stat(stratum)))+
+  scale_x_continuous(breaks = 1:5,
+                     labels = c("Farmers' replies\n by location (gender)",
+                              "Exposure to\n weather shocks",
+                              "Implementation / use\n cases (gender)",
+                              "Drivers / Reasons\n",
+                              "CSA option\n"))+
+  scale_fill_hue(l = 70, c = 45, h = c(0, 360))+
+  theme_minimal()+
+  theme(panel.grid = element_blank(),
+        plot.background = element_rect(fill = "#faf9f5", color = "#faf9f5"),
+        legend.position = "none",
+        axis.text.x = element_text(
+            size = 10, 
+            color = "#B8B7B3", #this is 0.2 darkened
+            vjust = 5),
+        axis.text.y = element_blank(),
+        axis.title = element_blank())
+    
+p_alluv
+
+```
+
+
