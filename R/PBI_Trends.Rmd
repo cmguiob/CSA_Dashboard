@@ -73,11 +73,10 @@ f_ggsankey <- function(dataset = Q1_options, location, CSA_category, year_1, yea
   
   # Prepare data for ggsankey
   dat <- dataset %>%
-      # Filter by location type (this will be a selection box in PBI)
+  # Filter by location type (this will be a selection box in PBI)
   filter(location_name == location) %>%
   filter(option == CSA_category) %>%
   filter(year >= year_1 & year <= year_2 ) %>%
-  filter(practice_type == practice_type) %>%
   select(location_type, 
          location_name, 
          farmer_id, 
