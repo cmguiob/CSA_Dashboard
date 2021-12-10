@@ -23,7 +23,7 @@ library(here)
 temp <- tempfile() 
 tempd <- tempdir()
 
-url_data <- "https://github.com/cmguiob/CSA_Dashboard/raw/main/Data/Data%20Q1.zip"
+url_data <- "https://github.com/cmguiob/CSA_Dashboard/raw/main/Data_R/Data%20Q1.zip"
 
 download.file(url_data, temp, mode="wb") ##Download. mode is necessary for windows
 
