@@ -1,0 +1,51 @@
+---
+title: "Dashboard: Uptake"
+subtitle: "Barplots"
+author: "Carlos Guío"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: journal
+    highlight: tango
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include = FALSE}
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "90%")
+
+```
+
+## Read and prepare Q1 datasets
+
+Q1 datasets are loaded by sourcing the `Prepare_Uptake_Barplot.R`script. These datasets were designed to answer the questions:
+
+* Who adopted/disadopted practices and why?
+* Who accessed/used climate information services?
+
+The Q1_practices and Q1_services datasets were lightly processed to make them compatible among them.
+
+
+```{r source, echo = TRUE}
+library(devtools)
+
+source_url("https://raw.githubusercontent.com/cmguiob/CSA_Dashboard/main/R/Prepare_Uptake_Barplot.R")
+
+```
+
+## Visualization
+
+The following chunks have code to plot qualitative diagrams that visualize flows of data between categories, explained at the bottom of each plot. It allows to understand the connection between farmer gender, exposure to weather shocks, implementation cases of practices (or use cases of services), drivers of implementation (or reasons to use services) and practices (or services). Since a given farmer can implement (or use) more than one CSA option (practice or CIS), the thickness of the flows corresponds to farmer replies,  rather than farmers: for example, a farmer can reply twice when he/she adopts two practices, or when he/she implements and stop implementing a given practice.
+
+### First visualization choice: sankey plot with `ggsankey` (not on CRAN)
+
+This library is supported by plotly for conversion!! (see below)
+
+[Best reference for ggsankey](https://github.com/davidsjoberg/ggsankey)
+[Best help for labels](https://stackoverflow.com/questions/67180502/sankey-diagram-labels-in-r)
+
+In the first chunk of this section the code creates a function to create a sankey plot for a location and CSA_category of choice.
+
+
+

@@ -24,11 +24,10 @@ Q1 datasets are loaded by sourcing the `Prepare_Trends_Sankey.R`script. These da
 * Who adopted/disadopted practices and why?
 * Who accessed/used climate information services?
 
-The Q1_practices and Q1_services datasets were lightly processed in the to make them compatible.
+The Q1_practices and Q1_services datasets were lightly processed to make them compatible among them.
 
 
 ```{r source, echo = TRUE}
-library(here)
 library(devtools)
 
 source_url("https://raw.githubusercontent.com/cmguiob/CSA_Dashboard/main/R/Prepare_Trends_Sankey.R")
@@ -46,7 +45,7 @@ This library is supported by plotly for conversion!! (see below)
 [Best reference for ggsankey](https://github.com/davidsjoberg/ggsankey)
 [Best help for labels](https://stackoverflow.com/questions/67180502/sankey-diagram-labels-in-r)
 
-In the first chunk of this section the code creates a function to create a sankey plot for a location and CSA_category of choice.
+In the first chunk of this section the code creates a function to create a sankey plot for a location year interval and CSA_category of choice.
 
 ```{r function_ggsankey, include = TRUE, echo = TRUE}
 
