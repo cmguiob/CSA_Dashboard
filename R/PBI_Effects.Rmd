@@ -1,0 +1,65 @@
+---
+title: "Dashboard: Effects"
+subtitle: "Tornado plots"
+author: "Carlos Guío"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: journal
+    highlight: tango
+editor_options: 
+  chunk_output_type: inline
+---
+
+The goal of this plot is to show which the relationship between practices and perceived social and environmental effects at each site. The information is at the farmer level.
+
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "75%")
+```
+
+
+
+## Including Plots
+
+
+
+```{r plot_tornado, include = TRUE}
+
+tornado_dat <- effect_dat %>%
+         mutate(percentage = case_when(percentage < 10 ~ "",
+                                       TRUE ~ as.character(paste0(percentage, "%")))) %>%
+         # This is a slicer in PBI
+         filter(outcome_category == "Food security" & indicator == "Improved food access") %>%
+         filter(site == "Doyogena")
+
+ggplot(tornado_dat) +
+  geom_col(aes(x = practice_type, y = ifelse(gender == "Male", n, -n), fill = gender, alpha = alpha)) +
+  geom_text(aes(x = practice_type, y = ifelse(gender == "Male", n, -n), label = percentage),
+            nudge_y = ifelse(tornado_dat$gender == "Male", 10, -10),
+            size = 2) +
+  scale_alpha(range = c(0.5, 1))+
+  scale_fill_manual(values = c("#32aa52", "#a9713d")) +
+  scale_y_continuous(limits = c(-max(tornado_dat$n) -10, max(tornado_dat$n) +10))+
+  facet_grid(indicator ~ site + year)+
+  coord_flip() +
+  guides(alpha = "none")+
+  theme_minimal()+
+  theme(panel.grid = element_blank(),
+        panel.background = element_rect(fill = "#faf9f5", color = "#ECEBE7" ),
+        plot.background = element_rect(fill = "#faf9f5", 
+                                       color = "#faf9f5"),
+        strip.background = element_rect(fill = "#ECEBE7", color = "#ECEBE7"),
+        strip.text = element_text(margin = margin(2.5,0,2.5,0, "mm"), size = 8, color = "#5D5C58"),
+        legend.title = element_blank(),
+        legend.justification = "left",
+        legend.position = "bottom",
+        legend.text = element_text(size = 8, color = "#5D5C58"),
+        axis.title = element_blank(),
+        axis.text.y = element_text(color = "#B8B7B3", size = 7),
+        axis.text.x = element_blank())
+
+```
+
+

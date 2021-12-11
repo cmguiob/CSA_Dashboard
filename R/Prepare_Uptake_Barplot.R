@@ -22,13 +22,13 @@ library(here)
 temp <- tempfile() 
 tempd <- tempdir()
 
-url_data <- "https://github.com/cmguiob/CSA_Dashboard/raw/main/Data_R/Data%20Q1.zip"
+url_data <- "https://github.com/cmguiob/CSA_Dashboard/raw/main/Data_R/Data_Q1_Q2.zip"
 
 download.file(url_data, temp, mode="wb") ##Download. mode is necessary for windows
 
 unzip(temp, exdir=tempd) #Unzip in temporal directory
 
-files_names <- list.files(tempd, pattern = "*.csv") #Read csv file names
+files_names <- list.files(tempd, pattern = "Q1") #Read csv file names
 files_paths <- paste(file.path(tempd), files_names[], sep = "\\") #Create paths
 
 
