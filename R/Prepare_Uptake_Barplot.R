@@ -157,16 +157,32 @@ practice_summ <- Q1_options %>%
                  subtype,
                  description, 
                  adopted_cases) %>% 
+        distinct() %>%
         count(gender) %>%
         left_join(gender_site, by = c("site", "gender"))%>%
         ungroup() %>%
-        group_by(option, site, practice_type, gender, n_site) %>% 
+        group_by(option, year, site, practice_type, gender, n_site) %>% #modif
         # Ad da new row by group
         #group_modify(~ add_row(.data = .x, adopted_cases = "Other")) %>%
         #mutate(n = case_when(is.na(n) & adopted_cases == "Other" ~ n_site - sum(n, na.rm = TRUE),
         #                     TRUE ~ as.double(n))) %>%
         mutate(percentage = case_when(n_site != 0 ~ round(n*100/n_site, 1),
                                 TRUE ~ as.double(0))) 
+
+# Top practices are not disaggregated by year
+top_ad_use <- practice_summ %>%
+        filter(adopted_cases == "Implemented" | adopted_cases == "Accessed and used it") %>%
+        group_by(option, year, site, gender, percentage, practice_type) %>% # previous version had year
+        arrange(subtype, .by_group = TRUE) %>%
+        ungroup() %>%
+        group_by(option, year, site, gender) %>% # previous version had year
+        top_n(3, wt = percentage) %>%
+        mutate(top = n():1) %>%
+        # This could be used reduce noise of top practices with low percentages
+        #mutate(top = case_when(percentage >= 5 ~ "*",
+        #                          TRUE ~ NA_character_)) %>%
+        select(option, site, practice_type, subtype, gender, adopted_cases, percentage, top) %>%  # previous version had year
+        ungroup()
 
 
 uptake_dat <- coordinates %>%
@@ -181,6 +197,7 @@ uptake_dat <- coordinates %>%
         #Join with details from communities by site and summaries
         right_join(practice_summ, by = "site") %>%
         filter(subtype != "No service") %>%
+        left_join(top_ad_use, by = c("option","year","site", "practice_type", "subtype","gender","adopted_cases", "percentage"))%>%
         group_by(option, year, site, practice_type, subtype, description, gender, n_site) 
 
 

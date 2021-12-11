@@ -149,31 +149,36 @@ According to Claus Wilke, humans are better perceiving distances over areas. The
 
 In the first chunk of this section the code creates a function to create a barplot for a location, practice type, practice subtype, year interval and CSA_category of choice.
 
-```{r function_barplot_1,  include = TRUE, echo = TRUE }
+```{r function_barplot,  include = TRUE, echo = TRUE }
 
-f_barplot <- function(dataset = uptake_dat, CSA_category, type, subtype, location, year_1, year_2){
+f_barplot <- function(dataset = uptake_dat, CSA_category, type, subtype, year_1, year_2, location = uptake_dat$site){
   
   library(tidyverse)
   library(ggplot2)
   library(ggrepel)
   
   # Error messages
-if (!CSA_category %in% c("Practices", "Services")) 
-  stop("use either Practices or Services as CSA_category")
+  if (!CSA_category %in% c("Practices", "Services")) 
+    stop("use either Practices or Services as CSA_category")
 
-if (!type %in% dataset$practice_type) 
-  stop("assign a valid practice type")
+  if (!type %in% dataset$practice_type) 
+    stop("assign a valid practice type")
 
-if (!subtype %in% dataset$subtype) 
-  stop("assign a valid practice subtype")
+  if (!subtype %in% dataset$subtype) 
+    stop("assign a valid practice subtype")
   
   years <- dataset %>% ungroup() %>%
   filter(site %in% location, option == CSA_category, practice_type == type, subtype == subtype) %>%            select(year) %>%
   distinct()
 
-if (!any(range(years) %in% seq(year_1, year_2, by=1))) 
-  stop("assign a valid year interval to the surveyed site")
+  if (!any(range(years) %in% seq(year_1, year_2, by=1))) 
+    stop("assign a valid year interval to the surveyed site")
 
+  if (!missing(location)) {
+    dataset <- dataset %>% filter(site %in% location)
+    if (!location %in% dataset$site) 
+    stop("assign a valid site name as location")
+  }
   
   dat <- dataset %>% 
   # Filter by location type (this will be a selection box in PBI)
@@ -210,7 +215,7 @@ if (!any(range(years) %in% seq(year_1, year_2, by=1)))
            aes(fill = adopted_cases, y = n, x = gender_n)) + 
     geom_bar(position="stack", stat="identity", alpha = 0.8)+
     geom_label_repel(data = dat,
-                aes(label = paste(round(percentage,0),"%"), 
+                aes(label = paste0(round(percentage,0),"%"), 
                 x = gender_n, 
                 y = pos,
                 color = adopted_cases), 
@@ -230,13 +235,13 @@ if (!any(range(years) %in% seq(year_1, year_2, by=1)))
                linetype=2, color = "#B8B7B3")+
     facet_grid(year ~ site, scales = "free_x", space = "free_x") +
     scale_y_continuous(labels = scales::percent_format()) +
-  scale_fill_manual(values = c("#9ACD32", "#C67171", "#b5b0b0","#CDC9C9", "#E6E1E1"))+
-  scale_color_manual(values = c("#9ACD32", "#C67171",  "#b5b0b0","#CDC9C9", "#E6E1E1"))+
-  # Optional fills
-  #scale_fill_OkabeIto(order = c(3,4, 1,2))+
-  #scale_fill_hue(l = 70, c = 45, h = c(95,360))+
-  #scale_color_hue(l = 70, c = 45, h = c(95,360))+ 
-  guides(fill = guide_legend(override.aes = list(size = 7),
+    scale_fill_manual(values = c("#9ACD32", "#C67171", "#b5b0b0","#CDC9C9", "#E6E1E1"))+
+    scale_color_manual(values = c("#9ACD32", "#C67171",  "#b5b0b0","#CDC9C9", "#E6E1E1"))+
+    # Optional fills
+    #scale_fill_OkabeIto(order = c(3,4, 1,2))+
+    #scale_fill_hue(l = 70, c = 45, h = c(95,360))+
+    #scale_color_hue(l = 70, c = 45, h = c(95,360))+ 
+    guides(fill = guide_legend(override.aes = list(size = 7),
                             title.position = "bottom",
                             title = ifelse(dat$option == "Practices", 
                                            "* Greyscale: not implemented", "")))+
@@ -246,16 +251,16 @@ if (!any(range(years) %in% seq(year_1, year_2, by=1)))
         #panel.background = element_rect(fill = "#faf9f5", color = "#ECEBE7", size = 1 ),
         #plot.background = element_rect(fill = "#faf9f5", color = "#faf9f5"),
         strip.background = element_rect(fill = "#ECEBE7", color = "#ECEBE7"),
-        strip.text.x = element_text(margin = margin(1.5,0,1.5,0, "mm"), size = 12, color = "#5D5C58"),
-        strip.text.y = element_text(margin = margin(0,1.5,0,1.5, "mm"), size = 12, color = "#5D5C58"),
+        strip.text.x = element_text(margin = margin(1.5,0,1.5,0, "mm"), size = 11, color = "#5D5C58"),
+        strip.text.y = element_text(margin = margin(0,1.5,0,1.5, "mm"), size = 11, color = "#5D5C58"),
         legend.title = element_text(size = 7, margin = margin(5,0,0,0, "mm")),
         legend.key.size = unit(1.5, 'lines'),
         legend.justification = "top",
         legend.position = "left",
-        legend.text = element_text(size = 10, color = "#5D5C58"),
+        legend.text = element_text(size = 9, color = "#5D5C58"),
         axis.title = element_blank(),
         axis.text.y = element_blank(),
-        axis.text.x = element_text(size = 10, color = "#B8B7B3", vjust = -2),
+        axis.text.x = element_text(size = 9, color = "#B8B7B3", vjust = -2),
         plot.margin=unit(c(5,10,10,5), "mm")) 
   
 }
@@ -264,13 +269,15 @@ if (!any(range(years) %in% seq(year_1, year_2, by=1)))
 ```
 
 
-### Use the function to create a barplot 
+#### Use the function to create a barplot 
 
-The argumens of the function take in values similar to the drop down menus used in the PBI-dashboard.To export it, first store it as an object.
+The argumens of the function take in values similar to the drop down menus used in the PBI-dashboard. Although the `location` argument is optional it is recommended to use it, as it will improve the readability of the graphic; for the best experience, input a maximum of three sites.
 
-```{r barplot_1, include= TRUE, echo = TRUE}
+To export it, first store it as an object.
 
-p_barplot <- f_barplot(CSA_category = "Practices", type = "Agroforestry", subtype = "Tree planting", location = c("Kaffrine", "Hoima"), year_1 = 2018, year_2 = 2021)
+```{r barplot, include= TRUE, echo = TRUE}
+
+p_barplot <- f_barplot(CSA_category = "Practices", type = "Agroforestry", subtype = "Tree planting", year_1 = 2018, year_2 = 2021, location =  c("Hoima","Kaffrine"))
 
 p_barplot
 
@@ -288,37 +295,55 @@ In the first chunk of this section the code creates a function to create a barpl
 
 ```{r function_barplot_2,  include = TRUE, echo = TRUE }
 
-f_barplot <- function(dataset = uptake_dat, CSA_category, type, subtype, location, year_1, year_2){
+f_barplot_2 <- function(dataset = uptake_dat, CSA_category, location, type = uptake_dat$practice_type,
+                        subtype = uptake_dat$subtype,  year_1, year_2, top = FALSE){
   
   library(tidyverse)
   library(ggplot2)
   library(ggrepel)
+  library(ggh4x)
   
   # Error messages
-if (!CSA_category %in% c("Practices", "Services")) 
-  stop("use either Practices or Services as CSA_category")
-
-if (!type %in% dataset$practice_type) 
-  stop("assign a valid practice type")
-
-if (!subtype %in% dataset$subtype) 
-  stop("assign a valid practice subtype")
+  if (!CSA_category %in% c("Practices", "Services")) 
+    stop("use either Practices or Services as CSA_category")
   
+  if (location != dataset$site) 
+    stop("assign a valid site name as location")
+
   years <- dataset %>% ungroup() %>%
-  filter(site %in% location, option == CSA_category, practice_type == type, subtype == subtype) %>%            select(year) %>%
+  filter(site == location, option == CSA_category, practice_type %in% type, subtype %in% subtype) %>%            select(year) %>%
   distinct()
 
-if (!any(range(years) %in% seq(year_1, year_2, by=1))) 
-  stop("assign a valid year interval to the surveyed site")
+  if (!any(range(years) %in% seq(year_1, year_2, by=1))) 
+    stop("assign a valid year interval to the surveyed site")
+  
+  
+  if (!missing(type)) {
+    dataset <- dataset %>% filter(practice_type %in% type)
+    if (!type %in% dataset$practice_type) 
+    stop("assign a valid practice type")
+  }
+  
+  if (!missing(subtype)) {
+    dataset <- dataset %>% filter(subtype %in% subtype)
+    if (!subtype %in% dataset$subtype) 
+    stop("assign a valid practice subtype")
+  }
+  
+  if (top == TRUE) {
+    dataset <- dataset %>% filter(!is.na(top))
+    if (!top %in% c(TRUE, FALSE)) 
+    stop("please input wither TRUE or FALSE. With TRUE argument the top 3 practices are shown")
+  }
 
   
   dat <- dataset %>% 
   # Filter by location type (this will be a selection box in PBI)
-  filter(site %in% location,
+  filter(site == location,
          option == CSA_category,
          year >= year_1 & year <= year_2,
-         practice_type == type,
-         subtype == subtype) %>%
+         practice_type %in% type,
+         subtype %in% subtype) %>%
   # Assign levels to adopted cases
   mutate(adopted_cases = factor(adopted_cases, levels = c("Implemented",
                                                  "Stopped implementing",
@@ -330,6 +355,7 @@ if (!any(range(years) %in% seq(year_1, year_2, by=1)))
   group_by(year, site, practice_type, subtype, gender, n_site) %>%  
   # Filter out 0 values  
   filter(n != 0)%>%
+  filter(adopted_cases == "Implemented" | adopted_cases == "Stopped implementing") %>%
   # Create graphic variables  
   mutate(gender_n = paste(substr(gender,1,1), paste0("(",n_site,")"), sep = "\n"))%>%
   arrange(year, site, practice_type, subtype, gender, desc(adopted_cases)) %>%
@@ -347,7 +373,7 @@ if (!any(range(years) %in% seq(year_1, year_2, by=1)))
            aes(fill = adopted_cases, y = n, x = gender_n)) + 
     geom_bar(position="stack", stat="identity", alpha = 0.8)+
     geom_label_repel(data = dat,
-                aes(label = paste(round(percentage,0),"%"), 
+                aes(label = paste0(round(percentage,0),"%"), 
                 x = gender_n, 
                 y = pos,
                 color = adopted_cases), 
@@ -365,37 +391,54 @@ if (!any(range(years) %in% seq(year_1, year_2, by=1)))
                    y = n_site, 
                    yend = n_site), 
                linetype=2, color = "#B8B7B3")+
-    facet_grid(year ~ site, scales = "free_x", space = "free_x") +
+    facet_nested(year ~ practice_type + subtype, scales = "free_x", space = "free_x") +
     scale_y_continuous(labels = scales::percent_format()) +
-  scale_fill_manual(values = c("#9ACD32", "#C67171", "#b5b0b0","#CDC9C9", "#E6E1E1"))+
-  scale_color_manual(values = c("#9ACD32", "#C67171",  "#b5b0b0","#CDC9C9", "#E6E1E1"))+
-  # Optional fills
-  #scale_fill_OkabeIto(order = c(3,4, 1,2))+
-  #scale_fill_hue(l = 70, c = 45, h = c(95,360))+
-  #scale_color_hue(l = 70, c = 45, h = c(95,360))+ 
-  guides(fill = guide_legend(override.aes = list(size = 7),
+    scale_fill_manual(values = c("#9ACD32", "#C67171", "#b5b0b0","#CDC9C9", "#E6E1E1"))+
+    scale_color_manual(values = c("#9ACD32", "#C67171",  "#b5b0b0","#CDC9C9", "#E6E1E1"))+
+    # Optional fills
+    #scale_fill_OkabeIto(order = c(3,4, 1,2))+
+    #scale_fill_hue(l = 70, c = 45, h = c(95,360))+
+    #scale_color_hue(l = 70, c = 45, h = c(95,360))+ 
+    guides(fill = guide_legend(override.aes = list(size = 7),
                             title.position = "bottom",
                             title = ifelse(dat$option == "Practices", 
                                            "* Greyscale: not implemented", "")))+
-  theme_minimal()+
+    theme_minimal()+
     theme(panel.grid = element_blank(),
         # Optional background colors like in the dashboard  
         #panel.background = element_rect(fill = "#faf9f5", color = "#ECEBE7", size = 1 ),
         #plot.background = element_rect(fill = "#faf9f5", color = "#faf9f5"),
         strip.background = element_rect(fill = "#ECEBE7", color = "#ECEBE7"),
-        strip.text.x = element_text(margin = margin(1.5,0,1.5,0, "mm"), size = 12, color = "#5D5C58"),
-        strip.text.y = element_text(margin = margin(0,1.5,0,1.5, "mm"), size = 12, color = "#5D5C58"),
+        strip.text.x = element_text(margin = margin(1.5,0,1.5,0, "mm"), size = 10, color = "#5D5C58"),
+        strip.text.y = element_text(margin = margin(0,1.5,0,1.5, "mm"), size = 10, color = "#5D5C58"),
         legend.title = element_text(size = 7, margin = margin(5,0,0,0, "mm")),
         legend.key.size = unit(1.5, 'lines'),
         legend.justification = "top",
         legend.position = "left",
-        legend.text = element_text(size = 10, color = "#5D5C58"),
+        legend.text = element_text(size = 9, color = "#5D5C58"),
         axis.title = element_blank(),
         axis.text.y = element_blank(),
-        axis.text.x = element_text(size = 10, color = "#B8B7B3", vjust = -2),
+        axis.text.x = element_text(size = 9, color = "#B8B7B3", vjust = -2),
         plot.margin=unit(c(5,10,10,5), "mm")) 
   
 }
 
+
+```
+
+#### Use the function to create a barplot 
+
+The argumens of the function take in values similar to the drop down menus used in the PBI-dashboard. Although the `type` argument is optional it is recommended to use it, as it will improve the readability of the graphic; for the best experience, input a maximum of two types of practices. `subtype`and `top`are also optional: with the first it is possible to select specific practice sbtypes for the selected type, with the second it is possible to display the top 3 most implemented practices. If the argument `top = TRUE`, `type`and `subtype`must be ignored.
+
+To export it, first store it as an object.
+
+```{r barplot_2, include= TRUE, echo = TRUE}
+
+p_barplot_2 <- f_barplot_2(CSA_category = "Practices", year_1 = 2018, year_2 = 2021, location = "Doyogena", top = TRUE)
+
+p_barplot_2
+
+# Export
+#ggsave(file = "p_barplot.png", plot = p_barplot, device = "png", type = "cairo", path = "Input a path from your PC, dpi = 300, width = 9.5, height = 5)
 
 ```
