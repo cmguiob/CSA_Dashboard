@@ -1,6 +1,6 @@
 ---
 title: "Dashboard: Uptake"
-subtitle: "Barplots"
+subtitle: "Maps and barplots"
 author: "Carlos Guío"
 date: "`r Sys.Date()`"
 output:
@@ -210,7 +210,7 @@ f_barplot <- function(dataset = uptake_dat, CSA_category, type, subtype, year_1,
                        any(str_detect(gender, "Female"))& gender == "Male"~ 2.4,
                        any(!str_detect(gender, "Female"))& gender == "Male"~ 1.4)) 
   
-
+    #Plot
     ggplot(dat,
            aes(fill = adopted_cases, y = n, x = gender_n)) + 
     geom_bar(position="stack", stat="identity", alpha = 0.8)+
@@ -220,7 +220,7 @@ f_barplot <- function(dataset = uptake_dat, CSA_category, type, subtype, year_1,
                 y = pos,
                 color = adopted_cases), 
             show.legend=F,
-            size = 2.5,
+            size = 2.5, #adjust size of percentage labels
             alpha = 0.8,
             force = 0.1,
             box.padding = 0.1,
@@ -251,15 +251,18 @@ f_barplot <- function(dataset = uptake_dat, CSA_category, type, subtype, year_1,
         #panel.background = element_rect(fill = "#faf9f5", color = "#ECEBE7", size = 1 ),
         #plot.background = element_rect(fill = "#faf9f5", color = "#faf9f5"),
         strip.background = element_rect(fill = "#ECEBE7", color = "#ECEBE7"),
+        #adjust size of facet header text
         strip.text.x = element_text(margin = margin(1.5,0,1.5,0, "mm"), size = 11, color = "#5D5C58"),
         strip.text.y = element_text(margin = margin(0,1.5,0,1.5, "mm"), size = 11, color = "#5D5C58"),
         legend.title = element_text(size = 7, margin = margin(5,0,0,0, "mm")),
         legend.key.size = unit(1.5, 'lines'),
         legend.justification = "top",
         legend.position = "left",
+        #adjust size of legend text
         legend.text = element_text(size = 9, color = "#5D5C58"),
         axis.title = element_blank(),
         axis.text.y = element_blank(),
+        #adjust size of axis text
         axis.text.x = element_text(size = 9, color = "#B8B7B3", vjust = -2),
         plot.margin=unit(c(5,10,10,5), "mm")) 
   
@@ -288,7 +291,7 @@ p_barplot
 
 ### Second visualization (alternative): barplot with `ggplot` (CRAN), faceted by practice subtype and year.
 
-This is an alternative visualization option not used in PBI, but useful for the static reports, since it displays several 
+This is an alternative visualization option not used in PBI, but useful for the static reports, since it displays several practices for a given site.
 
 In the first chunk of this section the code creates a function to create a barplot for a location, practice type, practice subtype, year interval and CSA_category of choice.
 
@@ -368,7 +371,8 @@ f_barplot_2 <- function(dataset = uptake_dat, CSA_category, location, type = upt
                        any(str_detect(gender, "Female"))& gender == "Male"~ 2.4,
                        any(!str_detect(gender, "Female"))& gender == "Male"~ 1.4)) 
   
-
+    
+    #Plot
     ggplot(dat,
            aes(fill = adopted_cases, y = n, x = gender_n)) + 
     geom_bar(position="stack", stat="identity", alpha = 0.8)+
@@ -378,7 +382,7 @@ f_barplot_2 <- function(dataset = uptake_dat, CSA_category, location, type = upt
                 y = pos,
                 color = adopted_cases), 
             show.legend=F,
-            size = 2.5,
+            size = 2.5, #adjust size of percentage labels
             alpha = 0.8,
             force = 0.1,
             box.padding = 0.1,
@@ -409,15 +413,18 @@ f_barplot_2 <- function(dataset = uptake_dat, CSA_category, location, type = upt
         #panel.background = element_rect(fill = "#faf9f5", color = "#ECEBE7", size = 1 ),
         #plot.background = element_rect(fill = "#faf9f5", color = "#faf9f5"),
         strip.background = element_rect(fill = "#ECEBE7", color = "#ECEBE7"),
+        #adjust size of facet header text
         strip.text.x = element_text(margin = margin(1.5,0,1.5,0, "mm"), size = 10, color = "#5D5C58"),
         strip.text.y = element_text(margin = margin(0,1.5,0,1.5, "mm"), size = 10, color = "#5D5C58"),
         legend.title = element_text(size = 7, margin = margin(5,0,0,0, "mm")),
         legend.key.size = unit(1.5, 'lines'),
         legend.justification = "top",
         legend.position = "left",
+        #adjust size of legend text
         legend.text = element_text(size = 9, color = "#5D5C58"),
         axis.title = element_blank(),
         axis.text.y = element_blank(),
+        #adjust size of axis text
         axis.text.x = element_text(size = 9, color = "#B8B7B3", vjust = -2),
         plot.margin=unit(c(5,10,10,5), "mm")) 
   
@@ -428,13 +435,11 @@ f_barplot_2 <- function(dataset = uptake_dat, CSA_category, location, type = upt
 
 #### Use the function to create a barplot 
 
-The argumens of the function take in values similar to the drop down menus used in the PBI-dashboard. Although the `type` argument is optional it is recommended to use it, as it will improve the readability of the graphic; for the best experience, input a maximum of two types of practices. `subtype`and `top`are also optional: with the first it is possible to select specific practice sbtypes for the selected type, with the second it is possible to display the top 3 most implemented practices. If the argument `top = TRUE`, `type`and `subtype`must be ignored.
-
-To export it, first store it as an object.
+The argumens of the function take in values similar to the drop down menus used in the PBI-dashboard. Although the `type` argument is optional it is recommended to use it, as it will improve the readability of the graphic; for the best experience, input a maximum of two types of practices.
 
 ```{r barplot_2, include= TRUE, echo = TRUE}
 
-p_barplot_2 <- f_barplot_2(CSA_category = "Practices", year_1 = 2018, year_2 = 2021, location = "Doyogena", top = TRUE)
+p_barplot_2 <- f_barplot_2(CSA_category = "Practices", year_1 = 2018, year_2 = 2021, location = "Doyogena", type = c("Agroforestry", "Improved varieties"))
 
 p_barplot_2
 
@@ -442,3 +447,18 @@ p_barplot_2
 #ggsave(file = "p_barplot.png", plot = p_barplot, device = "png", type = "cairo", path = "Input a path from your PC, dpi = 300, width = 9.5, height = 5)
 
 ```
+
+`top`is also an optional argument: if used `top = TRUE`, it will display the top 3 most implemented practices. In that case `type`and `subtype`must be ignored.
+
+
+```{r barplot_3, include= TRUE, echo = TRUE}
+
+p_barplot_3 <- f_barplot_2(CSA_category = "Practices", year_1 = 2018, year_2 = 2021, location = "Doyogena", top = TRUE)
+
+p_barplot_3
+
+# Export
+#ggsave(file = "p_barplot.png", plot = p_barplot, device = "png", type = "cairo", path = "Input a path from your PC, dpi = 300, width = 9.5, height = 5)
+
+```
+

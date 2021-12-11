@@ -2,14 +2,14 @@
 # Date: 12.2021
 # Author: Carlos Guio
 # Institution: CIAT
-# Objective: Prepare dataset to plot trends in PBI
+# Objective: Prepare dataset to plot uptake in PBI
 
 # Description:
 # This script reads in data of practices and services, prepares it for plotting 
-# a sankey or alluvial diagram  and exports it as a compressed .csv file.
+# a map and a barplot  and exports it as a compressed .csv file.
 
 # Instructions: 
-# This code is to be sourced from the script PBI_Trends.Rmd
+# This code is to be sourced from the script PBI_Uptake.Rmd
 
 # ------------------------------------ Libraries --------------------------------
 

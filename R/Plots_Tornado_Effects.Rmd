@@ -1,0 +1,284 @@
+---
+title: "Dashboard effects"
+subtitle: "Tornado plots"
+author: "Carlos Guío"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: journal
+    highlight: tango
+editor_options: 
+  chunk_output_type: inline
+---
+
+The goal of this plot is to show which the relationship between practices and perceived social and environmental effects at each site. The information is at the farmer level.
+
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "75%")
+```
+
+
+```{r load, include = TRUE, echo = TRUE}
+library(tidyverse)
+
+
+Q1_practices <- read_csv(here::here("Data","EU-IFAD","Q1_practices.csv")) %>%
+                select(location_type, 
+                       location_name, 
+                       farmer_id, 
+                       gender = farmer_gender,
+                       year, 
+                       practice_type,
+                       subtype,
+                       adopted_cases) %>%
+                pivot_wider(names_from = location_type, values_from = location_name) %>%
+                unchop(everything()) %>%
+                mutate(option = "Practices",
+                       farmer_id = case_when(
+               farmer_id == "337a45e573817fba21d251ecc3a37523e14cc62d073" & 
+               gender == "Female" ~ "337a45e573817fba21d251ecc3a37523e14cc62d073_F",
+               farmer_id == "3e2a4c557a0a5277638e42df23b17bd63eb41858faa" & 
+               gender == "Female" ~ "3e2a4c557a0a5277638e42df23b17bd63eb41858faa_F",
+               farmer_id == "4e6a1f557611aec6b347a05cde3a1e093fb88e883a0" & 
+               gender == "Female" ~ "4e6a1f557611aec6b347a05cde3a1e093fb88e883a0_F",
+               farmer_id == "533a330570d0a9e20fdd55e40993645a7c9838e11b0" & 
+               gender == "Female" ~ "533a330570d0a9e20fdd55e40993645a7c9838e11b0_F",
+               farmer_id == "27fa75957420473f9ad14deb5ed9b7701031f701149" & 
+               gender == "Female" ~ "27fa75957420473f9ad14deb5ed9b7701031f701149_F",
+               farmer_id == "a75acb457efe9fb18b082f3a52d2dad46a69a42cf8e" & 
+               gender == "Female" ~ "a75acb457efe9fb18b082f3a52d2dad46a69a42cf8e_F",
+               farmer_id == "112a7c157220d8de79f29b9ac7bf6af20daa0a05983" & 
+               gender == "Female" ~ "112a7c157220d8de79f29b9ac7bf6af20daa0a05983_F",
+               farmer_id == "fd7a65f575e4ac103cbe3b6832d559cbc199d82101b" & 
+               gender == "Female" ~ "fd7a65f575e4ac103cbe3b6832d559cbc199d82101b_F",
+               TRUE ~ farmer_id),
+               practice_type = str_to_sentence(practice_type),
+               gender = str_to_sentence(gender))
+
+Q1_services <- read_csv(here::here("Data","EU-IFAD","Q1_services.csv")) %>%
+              select(location_type, 
+                       location_name, 
+                       farmer_id, 
+                       gender = farmer_gender,
+                       year, 
+                       practice_type,
+                       subtype,
+                       adopted_cases) %>%
+                pivot_wider(names_from = location_type, values_from = location_name) %>%
+                unchop(everything()) %>%
+                mutate(option = "Services",
+                       farmer_id = case_when(
+               farmer_id == "337a45e573817fba21d251ecc3a37523e14cc62d073" & 
+               gender == "Female" ~ "337a45e573817fba21d251ecc3a37523e14cc62d073_F",
+               farmer_id == "3e2a4c557a0a5277638e42df23b17bd63eb41858faa" & 
+               gender == "Female" ~ "3e2a4c557a0a5277638e42df23b17bd63eb41858faa_F",
+               farmer_id == "4e6a1f557611aec6b347a05cde3a1e093fb88e883a0" & 
+               gender == "Female" ~ "4e6a1f557611aec6b347a05cde3a1e093fb88e883a0_F",
+               farmer_id == "533a330570d0a9e20fdd55e40993645a7c9838e11b0" & 
+               gender == "Female" ~ "533a330570d0a9e20fdd55e40993645a7c9838e11b0_F",
+               farmer_id == "27fa75957420473f9ad14deb5ed9b7701031f701149" & 
+               gender == "Female" ~ "27fa75957420473f9ad14deb5ed9b7701031f701149_F",
+               farmer_id == "a75acb457efe9fb18b082f3a52d2dad46a69a42cf8e" & 
+               gender == "Female" ~ "a75acb457efe9fb18b082f3a52d2dad46a69a42cf8e_F",
+               farmer_id == "112a7c157220d8de79f29b9ac7bf6af20daa0a05983" & 
+               gender == "Female" ~ "112a7c157220d8de79f29b9ac7bf6af20daa0a05983_F",
+               farmer_id == "fd7a65f575e4ac103cbe3b6832d559cbc199d82101b" & 
+               gender == "Female" ~ "fd7a65f575e4ac103cbe3b6832d559cbc199d82101b_F",
+               TRUE ~ farmer_id),
+               practice_type = str_to_sentence(practice_type),
+               gender = str_to_sentence(gender)) 
+
+Q2_practices <- read_csv(here::here("Data","EU-IFAD","Q2_practices.csv")) %>%
+  select(year,
+         site,
+         farmer_id,
+         gender = farmer_gender,
+         practice_type,
+         outcome_category,
+         indicator,
+         answer) %>%
+  mutate(option = "Practices",
+         practice_type = str_to_sentence(practice_type),
+         indicator = case_when(
+                    indicator == "CSA option increased production" ~ "Increased production",
+                    indicator == "CSA driven decrease in vulnerability" ~ 
+                      "Reduced climate vulner.",
+                    indicator == "Decreased agricultural labour time" ~ "Decreased labour time",
+                    indicator == "Increased agricultural labour time" ~ "Increased labour time",
+                    indicator == "Participation on use of CSA income" ~ 
+                      "Participated on CSA-income use",
+                    TRUE ~ indicator),
+         gender = str_to_sentence(gender)) 
+
+Q2_services <- read_csv(here::here("Data","EU-IFAD","Q2_services.csv")) %>%
+  select(year,
+         site,
+         farmer_id,
+         gender = farmer_gender,
+         practice_type = service_type,
+         outcome_category,
+         indicator,
+         answer) %>%
+  mutate(option = "Services",
+         practice_type = str_to_sentence(practice_type),
+         gender = str_to_sentence(gender))
+
+
+```
+
+Preparation includes counting the total number of farmers at each site (and disaggregate them by gender), the number of farmers (at each site) who answered "yes" for each combination of practice and indicator, the percentages of these farmers and, using the percentages, the top 3 practices that were most important for each indicator. Percentages are calculated within the group of people that adopted practices.
+
+```{r prep}
+
+# Number of farmers by gender that implemented practices at each site
+n_site_practices <- Q1_practices %>%
+                    filter(!is.na(gender)) %>% 
+                    filter(adopted_cases == "Implemented") %>% 
+                    select(site, gender, farmer_id) %>% 
+                    group_by(site, gender) %>%
+                    distinct(farmer_id) %>%
+                    summarise(n_site = n()) %>%
+                    ungroup()
+
+percent_practices <- Q2_practices %>%
+                    filter(answer == "yes")  %>%
+                    select(year, 
+                            site, 
+                            farmer_id, 
+                            gender, 
+                            outcome_category, 
+                            practice_type, 
+                            indicator) %>%
+                    group_by(year, 
+                             site, 
+                             outcome_category, 
+                             practice_type, 
+                             indicator, 
+                             gender) %>%
+                    distinct() %>% 
+                    count() %>%
+                    ungroup() %>%
+                    left_join(n_site_practices, by = c("site", "gender")) %>%
+  mutate(percentage = round(n*100/n_site,1))
+  
+
+top3_practices <- percent_practices %>%
+  group_by(year, site, outcome_category, gender, indicator) %>%
+  top_n(3, wt = percentage) %>%
+  mutate(alpha = "*")  %>%
+  select(-n, -n_site, -percentage) %>%
+  ungroup()
+
+effect_practices <- left_join(percent_practices, 
+                        top3_practices, 
+                        by = c("year","site","outcome_category", "practice_type", "indicator", "gender")) %>%
+              #Alpha for the ggplot
+              mutate(alpha = case_when(alpha == "*" ~ 1,
+                                       TRUE ~ 0.8))
+effect_practices
+
+```
+
+
+```{r}
+
+# Number of farmers by gender that accessed and used services at each site
+n_site_services <-Q1_services %>%
+  filter(!is.na(gender)) %>% 
+  filter(adopted_cases == "Accessed and used it") %>% 
+  select(site, gender, farmer_id) %>% 
+  group_by(site, gender) %>%
+  distinct(farmer_id) %>%
+  summarise(n_site = n()) %>%
+  ungroup()
+
+
+percent_services <- Q2_services %>%
+  filter(answer == "yes")  %>%
+    filter(practice_type != "No service") %>%
+  select(year, site, farmer_id, gender, outcome_category, practice_type, indicator) %>%
+  group_by(year, 
+           site, 
+           outcome_category, 
+           practice_type, 
+           indicator, 
+           gender) %>%
+  distinct() %>% 
+  count() %>%
+  ungroup() %>%
+  left_join(n_site_services, by = c("site", "gender")) %>%
+  mutate(percentage = round(n*100/n_site,1))
+  
+
+top3_services <- percent_services %>%
+  group_by(year, site, outcome_category, gender, indicator) %>%
+  top_n(3, wt = percentage) %>%
+  mutate(alpha = "*")  %>%
+  select(-n, -n_site, -percentage) %>%
+  ungroup()
+
+effect_services <- left_join(percent_services, 
+                        top3_services, 
+                        by = c("year","site","outcome_category", "practice_type", "indicator", "gender")) %>%
+              #Alpha for the ggplot
+              mutate(alpha = case_when(alpha == "*" ~ 1,
+                                       TRUE ~ 0.8))
+effect_services
+```
+
+
+
+
+```{r save}
+
+effect_dat <- bind_rows(effect_practices %>% mutate(option = "Practices"),
+                        effect_services %>% mutate(option = "Services") )
+
+write_csv(effect_dat, here::here("Data","EU-IFAD","effects.csv"))
+
+```
+
+## Including Plots
+
+
+
+```{r plot_tornado, include = TRUE}
+
+tornado_dat <- effect_dat %>%
+         mutate(percentage = case_when(percentage < 10 ~ "",
+                                       TRUE ~ as.character(paste0(percentage, "%")))) %>%
+         # This is a slicer in PBI
+         filter(outcome_category == "Food security" & indicator == "Improved food access") %>%
+         filter(site == "Doyogena")
+
+ggplot(tornado_dat) +
+  geom_col(aes(x = practice_type, y = ifelse(gender == "Male", n, -n), fill = gender, alpha = alpha)) +
+  geom_text(aes(x = practice_type, y = ifelse(gender == "Male", n, -n), label = percentage),
+            nudge_y = ifelse(tornado_dat$gender == "Male", 10, -10),
+            size = 2) +
+  scale_alpha(range = c(0.5, 1))+
+  scale_fill_manual(values = c("#32aa52", "#a9713d")) +
+  scale_y_continuous(limits = c(-max(tornado_dat$n) -10, max(tornado_dat$n) +10))+
+  facet_grid(indicator ~ site + year)+
+  coord_flip() +
+  guides(alpha = "none")+
+  theme_minimal()+
+  theme(panel.grid = element_blank(),
+        panel.background = element_rect(fill = "#faf9f5", color = "#ECEBE7" ),
+        plot.background = element_rect(fill = "#faf9f5", 
+                                       color = "#faf9f5"),
+        strip.background = element_rect(fill = "#ECEBE7", color = "#ECEBE7"),
+        strip.text = element_text(margin = margin(2.5,0,2.5,0, "mm"), size = 8, color = "#5D5C58"),
+        legend.title = element_blank(),
+        legend.justification = "left",
+        legend.position = "bottom",
+        legend.text = element_text(size = 8, color = "#5D5C58"),
+        axis.title = element_blank(),
+        axis.text.y = element_text(color = "#B8B7B3", size = 7),
+        axis.text.x = element_blank())
+
+```
+
+
