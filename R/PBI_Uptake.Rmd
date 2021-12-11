@@ -36,7 +36,110 @@ source_url("https://raw.githubusercontent.com/cmguiob/CSA_Dashboard/main/R/Prepa
 
 ## Visualizations
 
-The following chunks contain the code that was used to creat the barplots on the **uptake** page of the dashboard.
+The following chunks contain the code that was used to creat the graphics on the **uptake** page of the dashboard, namely a barplot and a map.
+
+
+### Visaulization choice: maps of selected sites
+
+In the next chuck you will find a function that allows to map the locations where a given practice or service was implemented/used. The location argument is optional and must be given by site.
+
+```{r function_map, include = TRUE, echo = TRUE}
+
+
+f_map <- function(dataset = uptake_dat, CSA_category, type, subtype, year_1, year_2, location = uptake_dat$site ){
+  
+  library(ggplot2)
+  library(tidyverse)
+  library(ggrepel)
+  
+  # Error messages
+  if (CSA_category != c("Practices", "Services")) 
+    stop("use either Practices or Services as CSA_category")
+
+  if (!type %in% dataset$practice_type) 
+    stop("assign a valid practice type")
+
+  if (!subtype %in% dataset$subtype) 
+    stop("assign a valid practice subtype")
+  
+
+  dataset <- dataset %>%
+             filter(option == CSA_category,
+                    year >= year_1 & year <= year_2 ,
+                    practice_type == type,
+                    subtype == subtype)
+  
+  if (!missing(location)) {dataset <- dataset %>% filter(site == location)}
+  
+    if (!location %in% dataset$site) 
+    stop("assign a valid site name as location")
+  
+  world_data <- ggplot2::map_data('world')%>%
+  rename(country = region) %>%
+  select(-subregion) %>%
+  filter(country %in% dataset$country)
+  
+  
+  ggplot(data = world_data,
+       aes(x = long, 
+           y = lat)) +
+    geom_polygon(data = world_data,
+               aes(group = group),
+               color = "#faf9f5", 
+               fill = "#ECEBE7", 
+               size = 1) +
+    geom_point(data = dataset, 
+             aes(x = longitude_site, 
+                 y = latitude_site),
+             shape = 19,
+             size = 3,
+             alpha = 0.8, 
+             color = "#B8B7B3") +
+    geom_text_repel(data = dataset %>% 
+                    ungroup() %>%
+                    distinct(site, .keep_all = TRUE),
+                  aes(label = site,
+                      x = longitude_site, 
+                      y = latitude_site),
+                  size = 5,
+                  fontface = "bold",
+                  box.padding = 0.1,
+                  point.padding = 0.1,
+                  nudge_y = 0,
+                  max.overlaps = Inf,
+                  direction = "both",
+                  xlim = c(-Inf, Inf),
+                  alpha = 0.5) +
+    guides(color = "none")+
+    theme_minimal()+
+    theme(panel.grid = element_blank(),
+          # Optional background color as in dashboard
+          #plot.background = element_rect(fill = "#faf9f5", color = "#faf9f5"),
+          axis.text = element_blank(),
+          axis.title = element_blank(),
+          plot.margin=unit(c(0,20,0,20), "mm"))+
+  coord_quickmap(clip = "off")
+               
+}
+
+
+```
+
+### Use the function to create a barplot 
+
+The argumens of the function take in values similar to the drop down menus used in the PBI-dashboard.To export it, first store it as an object.
+
+
+```{r map, include= TRUE, echo = TRUE}
+
+p_map <- f_map(CSA_category = "Practices", type = "Agroforestry", subtype = "Tree planting", year_1 = 2019, year_2 = 2021, location = c("Kaffrine", "Cinzana"))
+
+p_map
+
+# Export
+#ggsave(file = "p_map.png", plot = p_map, device = "png", type = "cairo", path = "Input a path from your PC, dpi = 300, width = 9.5, height = 5)
+
+```
 
 ### Visualization choice: barplot with `ggplot` (CRAN)
 
@@ -53,7 +156,7 @@ f_barplot <- function(dataset = uptake_dat, CSA_category, type, subtype, locatio
   library(ggrepel)
   
   # Error messages
-if (CSA_category != c("Practices", "Services")) 
+if (!CSA_category %in% c("Practices", "Services")) 
   stop("use either Practices or Services as CSA_category")
 
 if (!type %in% dataset$practice_type) 
@@ -165,7 +268,7 @@ The argumens of the function take in values similar to the drop down menus used 
 
 ```{r barplot, include= TRUE, echo = TRUE}
 
-p_barplot <- f_barplot(CSA_category = "Practices", type = "Agroforestry", subtype = "Tree planting", location = "Kaffrine", year_1 = 2019, year_2 = 2020)
+p_barplot <- f_barplot(CSA_category = "Services", type = "Daily", subtype = "Only forecast", location = "Hoima", year_1 = 2018, year_2 = 2021)
 
 p_barplot
 
@@ -175,106 +278,6 @@ p_barplot
 ```
 
 
-### Visaulization choice: maps of selected sites
 
-In the next chuck you will find a function that allows to map the locations where a given practice or service was implemented/used. The location argument is optional and must be given by site.
-
-```{r function_map, include = TRUE, echo = TRUE}
-
-
-f_map <- function(dataset = uptake_dat, CSA_category, type, subtype, year_1, year_2, location){
-  
-  library(ggplot2)
-  library(tidyverse)
-  library(ggrepel)
-  
-  # Error messages
-  if (CSA_category != c("Practices", "Services")) 
-    stop("use either Practices or Services as CSA_category")
-
-  if (!type %in% dataset$practice_type) 
-    stop("assign a valid practice type")
-
-  if (!subtype %in% dataset$subtype) 
-    stop("assign a valid practice subtype")
-  
-
-  dataset <- dataset %>%
-             filter(option == CSA_category,
-                    year >= year_1 & year <= year_2 ,
-                    practice_type == type,
-                    subtype == subtype)
-  
-  if (!missing(location)) {dataset <- dataset %>% filter(site == location)}
-  
-    if (!location %in% dataset$site) 
-    stop("assign a valid site name as location")
-  
-  world_data <- ggplot2::map_data('world')%>%
-  rename(country = region) %>%
-  select(-subregion) %>%
-  filter(country %in% dataset$country)
-  
-  
-  ggplot(data = world_data,
-       aes(x = long, 
-           y = lat)) +
-    geom_polygon(data = world_data,
-               aes(group = group),
-               color = "#faf9f5", 
-               fill = "#ECEBE7", 
-               size = 1) +
-    geom_point(data = dataset, 
-             aes(x = longitude_site, 
-                 y = latitude_site),
-             shape = 19,
-             size = 3,
-             alpha = 0.8, 
-             color = "#B8B7B3") +
-    geom_text_repel(data = dataset %>% 
-                    ungroup() %>%
-                    distinct(site, .keep_all = TRUE),
-                  aes(label = site,
-                      x = longitude_site, 
-                      y = latitude_site),
-                  size = 5,
-                  fontface = "bold",
-                  box.padding = 0.1,
-                  point.padding = 0.1,
-                  nudge_y = 0,
-                  max.overlaps = Inf,
-                  direction = "both",
-                  xlim = c(-Inf, Inf),
-                  alpha = 0.5) +
-    guides(color = "none")+
-    theme_minimal()+
-    theme(panel.grid = element_blank(),
-          # Optional background color as in dashboard
-          #plot.background = element_rect(fill = "#faf9f5", color = "#faf9f5"),
-          axis.text = element_blank(),
-          axis.title = element_blank(),
-          plot.margin=unit(c(0,20,0,20), "mm"))+
-  coord_quickmap(clip = "off")
-               
-}
-
-
-```
-
-### Use the function to create a barplot 
-
-The argumens of the function take in values similar to the drop down menus used in the PBI-dashboard.To export it, first store it as an object.
-
-
-```{r map, include= TRUE, echo = TRUE}
-
-p_map <- f_map(CSA_category = "Practices", type = "Agroforestry", subtype = "Tree planting", year_1 = 2019, year_2 = 2021, location = c("Kaffrine", "Cinzana"))
-
-p_map
-
-# Export
-#ggsave(file = "p_map.png", plot = p_map, device = "png", type = "cairo", path = "Input a path from your PC, dpi = 300, width = 9.5, height = 5)
-
-```
 
 

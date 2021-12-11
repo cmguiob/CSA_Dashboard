@@ -56,7 +56,7 @@ f_ggsankey <- function(dataset = Q1_options, location, CSA_category, year_1, yea
 
 
   # Error messages
-   if (CSA_category != c("Practices", "Services")) 
+   if (!CSA_category %in% c("Practices", "Services")) 
      stop("use either Practices or Services as CSA_category")
   
   if (!location %in% Q1_options$location_name) 

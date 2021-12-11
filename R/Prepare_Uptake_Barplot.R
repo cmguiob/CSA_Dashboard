@@ -18,7 +18,6 @@ library(here)
 
 # ------------------------------------ Read data -------------------------------
 
-
 #Create temporal objects to read compressed data
 temp <- tempfile() 
 tempd <- tempdir()
@@ -39,7 +38,6 @@ coordinates <- read_csv(url_coords)
 
 
 # ------------------------- Prepare data ----------------------------------------
-
 
 #Clean
 Q1_practices <- read_csv(files_paths[1]) %>%
@@ -97,7 +95,6 @@ Q1_services <- read_csv(files_paths[2]) %>%
                subtype,
                adopted_cases,
                description) %>%
-        filter(practice_type != "No service") %>%
         pivot_wider(names_from = location_type, values_from = location_name) %>%
         #unnest nested columns
         unchop(everything()) %>%
