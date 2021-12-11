@@ -49,7 +49,8 @@ In the first chunk of this section the code creates a function to create a sanke
 
 ```{r function_ggsankey, include = TRUE, echo = TRUE}
 
-f_ggsankey <- function(dataset = Q1_options, location, CSA_category, year_1, year_2){
+f_ggsankey <- function(dataset = Q1_options, location, CSA_category, year_1, year_2,
+                       CSA_option = Q1_options$practice_type){
   
   library(tidyverse)
   library(ggsankey)
@@ -59,22 +60,28 @@ f_ggsankey <- function(dataset = Q1_options, location, CSA_category, year_1, yea
    if (!CSA_category %in% c("Practices", "Services")) 
      stop("use either Practices or Services as CSA_category")
   
-  if (!location %in% Q1_options$location_name) 
+  if (!location %in% dataset$location_name) 
     stop("assign a valid value to location")
   
-  years <- Q1_options %>% 
-           filter(location_name == location, option == CSA_category) %>% 
+  years <- dataset %>% 
+           filter(location_name %in% location, option == CSA_category) %>% 
            select(year) %>%
            distinct()
   
-  if (!any(range(years) %in% seq(year_1, year_2, by=1))) 
+    if (!any(range(years) %in% seq(year_1, year_2, by=1))) 
       stop("assign a valid year interval to the surveyed location")
   
+  if (!missing(CSA_option)) {
+    dataset <- dataset %>% filter(practice_type %in% CSA_option)
+    if (!CSA_option %in% dataset$practice_type) 
+    stop("assign a valid CSA option for the selected location and year")
+  }
+
   
   # Prepare data for ggsankey
   dat <- dataset %>%
   # Filter by location type (this will be a selection box in PBI)
-  filter(location_name == location) %>%
+  filter(location_name %in% location) %>%
   filter(option == CSA_category) %>%
   filter(year >= year_1 & year <= year_2 ) %>%
   select(location_type, 
@@ -152,11 +159,11 @@ f_ggsankey <- function(dataset = Q1_options, location, CSA_category, year_1, yea
 
 ### Use the function to create a ggsankey plot 
 
-The argumens of the function take in values similar to the drop down menus used in the PBI-dashboard.To export it, first store it as an object.
+The argumens of the function take in values similar to the drop down menus used in the PBI-dashboard. To export it, first store it as an object. The `CSA_option` argument is optional: if not given, all practices will be shown for the selected site and years; alternatively, one or more practices can be selected.
 
 ```{r plot_ggsankey, include= TRUE, echo = TRUE}
 
-p_sankey <- f_ggsankey(location = "Doyogena", CSA_category = "Practices", year_1 = 2018, year_2 = 2021)
+p_sankey <- f_ggsankey(location = "Doyogena", CSA_category = "Practices", year_1 = 2018, year_2 = 2021, CSA_option = c("Agroforestry", "Crop rotation"))
 
 p_sankey
 
@@ -165,7 +172,7 @@ p_sankey
 
 ```
 
-### Make it interactive with `ggplotly`
+### Make it interactive with `ggplotly` (optional)
 
 `ggplotly`is a CRAN package that allows to transform static ggplot into interactive plots. It is not currently compatible with PBI though.
 
@@ -185,7 +192,7 @@ ply_sankey
 ```
 
 
-### Second visualization choice: interactive sankey diagram with `highcharter` (CRAN)
+### Second visualization (alternative): interactive sankey diagram with `highcharter` (CRAN)
 
 `highcharter` is a CRAN package that allows to create interactive sankey plots. Nevertheless, these are not currently compatible with PBI.
 
@@ -220,7 +227,7 @@ dat_high <-  Q1_options %>%
 hchart(data_to_sankey(dat_high), "sankey")
 ```
 
-### Third choice: alluvial plot with `ggalluvial` (CRAN)
+### Third visualization (alternative): alluvial plot with `ggalluvial` (CRAN)
 
 Alluvial plots are similar to sankey plots. They differ in the fixed "box" display of the flows and also in the coloring options, which are devised to follow a given flow from start to end of the categories.
 
