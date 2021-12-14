@@ -39,7 +39,7 @@ source_url("https://raw.githubusercontent.com/cmguiob/CSA_Dashboard/main/R/Prepa
 The following chunks contain the code that was used to creat the graphics on the **uptake** page of the dashboard, namely a barplot and a map.
 
 
-### Visaulization choice: maps of selected sites
+### Visaulization choice: maps with `ggplot`(CRAN)
 
 In the next chuck you will find a function that allows to map the locations where a given practice or service was implemented/used. The location argument is optional and must be given by site.
 
@@ -145,9 +145,9 @@ p_map
 
 ### Visualization choice: barplot with `ggplot` (CRAN), faceted by site and year.
 
-According to Claus Wilke, humans are better perceiving distances over areas. Therefore, a barchart is decoded easier than a pie chart or a mosaic plot. In this case, the bar segments are related to implementation and use cases (of practices and services) of farmers at a given site.
+According to Wilke (Fundamentals of Data Visualization), humans are perceive distances better than areas. Therefore, a barchart is decoded easier than a pie chart or a mosaic plot. In this case, the bar segments are related to implementation and use cases (of practices and services) of farmers at a given site.
 
-In the first chunk of this section the code creates a function to create a barplot for a location, practice type, practice subtype, year interval and CSA_category of choice.
+In the first chunk of this section the code creates a function to create a barplot for a location, practice type, practice subtype, year interval and CSA_category of choice. The information is presented at the farmer level.
 
 ```{r function_barplot,  include = TRUE, echo = TRUE }
 

@@ -11,21 +11,83 @@ editor_options:
   chunk_output_type: inline
 ---
 
-The goal of this plot is to show which the relationship between practices and perceived social and environmental effects at each site. The information is at the farmer level.
 
 
 ```{r setup, include=FALSE}
 
-knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "75%")
+knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "90%")
 ```
 
 
+## Read and prepare Q1 and Q2 datasets
 
-## Including Plots
+Q1 and Q2 datasets are loaded by sourcing the `Prepare_Effects_Tornado.R`script. 
+
+Q1 datasets were designed to answer questions such as:
+
+* Who adopted/disadopted practices and why?
+* Who accessed/used climate information services?
+
+Q2 datasets were designed to answer questions such as:
+
+* How does the implementation of CSA practices affect food security, vulnerability to climate shocks, gender and income?
+
+* How does the use of CIS affect changes in animal and crop management?
+
+The Q1 and Q2 datasets were lightly processed to integrate them in a single dataset, which can be sourced with the following chunk:
 
 
+```{r source, echo = TRUE}
+library(devtools)
+
+source_url("https://raw.githubusercontent.com/cmguiob/CSA_Dashboard/main/R/Prepare_Effects_Tornado.R")
+
+```
+
+### Visaulization choice: tornado plot with `ggplot` (CRAN)
+
+In the next chunk you will find a function that allows to plot the relationship between practices (or services) and perceived socio-economic effects (indicators) at each site. The information is at the farmer level.
 
 ```{r plot_tornado, include = TRUE}
+
+f_tornado <- function(dataset = effects_dat, CSA_category, outcome, indicator, location, year_1, year_2){
+  
+  library(tidyverse)
+  library(ggplot2)
+  
+   # Error messages
+  if (!CSA_category %in% c("Practices", "Services")) 
+    stop("use either Practices or Services as CSA_category")
+
+  if (!outcome %in% dataset$outcome_category) 
+    stop("assign a valid outcome category")
+
+  if (!indicator %in% dataset$indicators) 
+    stop("assign a valid indicator")
+  
+  years <- dataset %>% ungroup() %>%
+    filter(site %in% location, option == CSA_category, outcome_category == outcome, 
+         indicators == indicator) %>%            
+    select(year) %>%
+  distinct()
+
+  if (!any(range(years) %in% seq(year_1, year_2, by=1))) 
+    stop("assign a valid year interval to the surveyed site")
+
+  if (!location %in% dataset$site) 
+    stop("assign a valid site name as location")
+  
+  
+  tornado_dat <- dataset %>%
+         filter(outcome_category == outcome,
+                indicators == indicator,
+                site == location)
+         filter(!is.na(practice_type)) %>%
+         mutate(percentage_lab = case_when(percentage < 2 ~ "",
+                                       TRUE ~ as.character(paste0(percentage, "%"))),
+                gender_legend = paste0(gender," (n: ",n_site,")"))
+  
+}
 
 tornado_dat <- effect_dat %>%
          mutate(percentage = case_when(percentage < 10 ~ "",
