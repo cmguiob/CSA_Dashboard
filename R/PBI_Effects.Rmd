@@ -48,12 +48,13 @@ source_url("https://raw.githubusercontent.com/cmguiob/CSA_Dashboard/main/R/Prepa
 
 In the next chunk you will find a function that allows to plot the relationship between practices (or services) and perceived socio-economic effects (indicators) at each site. The information is at the farmer level.
 
-```{r plot_tornado, include = TRUE}
+```{r function_tornado, include = TRUE, echo = TRUE}
 
-f_tornado <- function(dataset = effects_dat, CSA_category, outcome, indicator, location, year_1, year_2){
+f_tornado <- function(dataset = effect_dat, CSA_category, outcome, indic, location, year_1, year_2){
   
   library(tidyverse)
   library(ggplot2)
+  
   
    # Error messages
   if (!CSA_category %in% c("Practices", "Services")) 
@@ -62,66 +63,90 @@ f_tornado <- function(dataset = effects_dat, CSA_category, outcome, indicator, l
   if (!outcome %in% dataset$outcome_category) 
     stop("assign a valid outcome category")
 
-  if (!indicator %in% dataset$indicators) 
+  if (!indic %in% dataset$indicator) 
     stop("assign a valid indicator")
   
   years <- dataset %>% ungroup() %>%
-    filter(site %in% location, option == CSA_category, outcome_category == outcome, 
-         indicators == indicator) %>%            
+    filter(site == location, option == CSA_category, outcome_category == outcome, 
+         indicator == indic) %>%            
     select(year) %>%
   distinct()
 
   if (!any(range(years) %in% seq(year_1, year_2, by=1))) 
     stop("assign a valid year interval to the surveyed site")
 
-  if (!location %in% dataset$site) 
-    stop("assign a valid site name as location")
+  if (!location %in% dataset$site | length(location) >1) 
+    stop("assign a single valid site name as location")
   
   
+# Filter data according to arguments
   tornado_dat <- dataset %>%
-         filter(outcome_category == outcome,
-                indicators == indicator,
-                site == location)
-         filter(!is.na(practice_type)) %>%
-         mutate(percentage_lab = case_when(percentage < 2 ~ "",
-                                       TRUE ~ as.character(paste0(percentage, "%"))),
-                gender_legend = paste0(gender," (n: ",n_site,")"))
+  filter(option == CSA_category,
+         outcome_category == outcome,
+         indicator == indic,
+         site == location) %>%
+  filter(!is.na(practice_type)) %>%
+  mutate(percentage_lab = case_when(percentage < 2 ~ "",
+                                    TRUE ~ as.character(paste0(percentage, "%"))),
+         gender_legend = paste0(gender," (n: ",n_site,")"))
   
-}
-
-tornado_dat <- effect_dat %>%
-         mutate(percentage = case_when(percentage < 10 ~ "",
-                                       TRUE ~ as.character(paste0(percentage, "%")))) %>%
-         # This is a slicer in PBI
-         filter(outcome_category == "Food security" & indicator == "Improved food access") %>%
-         filter(site == "Doyogena")
-
-ggplot(tornado_dat) +
-  geom_col(aes(x = practice_type, y = ifelse(gender == "Male", n, -n), fill = gender, alpha = alpha)) +
-  geom_text(aes(x = practice_type, y = ifelse(gender == "Male", n, -n), label = percentage),
-            nudge_y = ifelse(tornado_dat$gender == "Male", 10, -10),
-            size = 2) +
+  
+  # Plot
+  ggplot(tornado_dat) +
+  geom_col(aes(x = factor(practice_type, levels = rev(levels(factor(practice_type)))),
+               y = ifelse(gender == "Male", percentage, -percentage), 
+               fill = gender)) +
+  geom_text(aes(x = practice_type, 
+                y = ifelse(gender == "Male", percentage + 8, -percentage -8), 
+                label = percentage_lab),
+            size = 2,
+            color = "#5D5C58",
+            fontface = "bold") +
   scale_alpha(range = c(0.5, 1))+
-  scale_fill_manual(values = c("#32aa52", "#a9713d")) +
-  scale_y_continuous(limits = c(-max(tornado_dat$n) -10, max(tornado_dat$n) +10))+
-  facet_grid(indicator ~ site + year)+
+  scale_fill_manual(values = c("#FFC107", "#a9713d")) +
+  scale_y_continuous(limits = c(-max(tornado_dat$percentage) -10, max(tornado_dat$percentage) +10))+
+  facet_grid(indicator ~ site + year )+
   coord_flip() +
-  guides(alpha = "none")+
-  theme_minimal()+
+  guides(alpha = "none")+labs(caption = "*Empty spaces are due to practices or services that were not assessed at the selected site and year.")+
+  theme_minimal(base_family = "Calibri")+
   theme(panel.grid = element_blank(),
-        panel.background = element_rect(fill = "#faf9f5", color = "#ECEBE7" ),
-        plot.background = element_rect(fill = "#faf9f5", 
-                                       color = "#faf9f5"),
+        # Optional color brackgrouns as in dashboard
+        #panel.background = element_rect(fill = "#faf9f5", color = "#ECEBE7" ),
+        #plot.background = element_rect(fill = "#faf9f5",  color = "#faf9f5"),
         strip.background = element_rect(fill = "#ECEBE7", color = "#ECEBE7"),
-        strip.text = element_text(margin = margin(2.5,0,2.5,0, "mm"), size = 8, color = "#5D5C58"),
+        strip.text.x = element_text(margin = margin(1,0,1,0, "mm"), size = 11, color = "#5D5C58"),
+        strip.text.y = element_text(margin = margin(0,2,0,2, "mm"), size = 11, color = "#5D5C58"),
         legend.title = element_blank(),
         legend.justification = "left",
         legend.position = "bottom",
-        legend.text = element_text(size = 8, color = "#5D5C58"),
+        legend.key.size = unit(1.5, 'lines'),
+        legend.text = element_text(size = 9, color = "#5D5C58"),
+        plot.caption = element_text(size = 6, hjust = 1, margin = margin(5,0,2,0, "mm")),
         axis.title = element_blank(),
-        axis.text.y = element_text(color = "#B8B7B3", size = 7),
-        axis.text.x = element_blank())
+        axis.text.y = element_text(color = "#B8B7B3", size = 9),
+        axis.text.x = element_blank(),
+        plot.margin=unit(c(5,5,5,5), "mm"),
+        panel.spacing = unit(1.5, "lines")) 
+  
+}
+
 
 ```
 
 
+#### Use the function to create a tornado plot
+
+The argumens of the function take in values similar to the drop down menus used in the PBI-dashboard. 
+
+To export it, first store it as an object.
+
+```{r barplot, include= TRUE, echo = TRUE}
+
+p_tornado <- f_tornado(CSA_category = "Practices", outcome = "Food security", indic = "Improved food access", location = "Hoima", year_1 = 2018, year_2 = 2021)
+
+p_tornado
+
+# Export
+#ggsave(file = "p_barplot.png", plot = p_barplot, device = "png", type = "cairo", path = "Input a path from your PC, dpi = 300, width = 9.5, height = 5)
+
+```

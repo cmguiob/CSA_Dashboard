@@ -208,6 +208,7 @@ effect_services <- Q2_services %>%
 effect_dat <- bind_rows(effect_practices %>% mutate(option = "Practices"),
                         effect_services %>% mutate(option = "Services") )
 
+rm(effect_practices, effect_services, n_site_implemented, n_site_used)
 
 #------------------------Export dataset for plotting ----------------------------------------------
 
