@@ -110,12 +110,15 @@ Q1_services <- read_csv(files_paths[2]) %>%
   mutate_if(is.character,as.factor) %>%
   select(-subtype)
 
-Q1_options <- bind_rows(Q1_practices, Q1_services)
+trends_dat <- bind_rows(Q1_practices, Q1_services)
 
 
 #------------------------Export dataset for plotting ----------------------------------------------
 
+# Remove all objects but coordinates summ
+rm(list =setdiff(ls(), "trends_dat"))
+
 # Write a compressed csv file
-write_csv(Q1_options, here::here("PBI","Data_PBI","trends.csv"))
+write_csv(trends_dat, here::here("PBI","Data_PBI","trends.csv"))
 
 # Note: to use it in PBI, manually transform the .csv to .xlsx

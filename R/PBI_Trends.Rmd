@@ -49,8 +49,8 @@ In the first chunk of this section the code creates a function to create a sanke
 
 ```{r function_ggsankey, include = TRUE, echo = TRUE}
 
-f_ggsankey <- function(dataset = Q1_options, location, CSA_category, year_1, year_2,
-                       CSA_option = Q1_options$practice_type){
+f_ggsankey <- function(dataset = trends_dat, location, CSA_category, year_1, year_2,
+                       CSA_option = trends_dat$practice_type){
   
   library(tidyverse)
   library(ggsankey)
@@ -201,7 +201,7 @@ ply_sankey
 library(highcharter)
 
 # Prepare data for highcharter
-dat_high <-  Q1_options %>%
+dat_high <-  trends_dat %>%
   select(location_type, 
          location_name, 
          farmer_id, 
@@ -237,7 +237,7 @@ Alluvial plots are similar to sankey plots. They differ in the fixed "box" displ
 library(ggalluvial)
 
 # Prepare data for ggalluvial
-dat_ggal <-  Q1_options %>%
+dat_ggal <-  trends_dat %>%
   select(location_type, 
          location_name, 
          farmer_id, 
