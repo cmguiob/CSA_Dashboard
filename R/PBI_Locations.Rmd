@@ -1,0 +1,131 @@
+---
+title: "Dashbaord Q1 - Locations"
+subtitle: "Labelled and interactive maps"
+author: "Carlos Guío"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: journal
+    highlight: tango
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "75%")
+
+
+```
+
+
+
+
+
+
+```{r plot, echo = TRUE, include = TRUE}
+
+library(grid)
+library(tidyverse)
+library(ggplot2)
+library(ggrepel)
+
+world_data <- ggplot2::map_data('world')%>%
+  rename(country = region) %>%
+  select(-subregion) %>%
+  filter(country %in% coordinates_summ$country) %>%
+  filter(country == "Bangladesh")
+
+# Shift country names to allow labels visibility
+world_labels <- world_data %>% 
+  group_by(country) %>%
+   summarise(long = 
+               case_when(country == "Bangladesh" ~ mean(long),
+                    country == "Ethiopia" ~ mean(long),
+                    country == "Senegal" ~ mean(long),
+                    country == "Mali" ~ mean(long) - mean(long)/1.5,
+                    country == "Niger" ~ mean(long) + mean(long)/1.5), 
+             lat = 
+              case_when(country == "Bangladesh" ~ mean(lat),
+                        country == "Ethiopia" ~ mean(lat),
+                        country == "Senegal" ~ mean(lat) - mean(lat)/10,
+                        country == "Mali" ~ mean(lat) + mean(lat)/5,
+                        country == "Niger" ~ mean(lat) + mean(lat)/10))
+
+
+g <- ggplot(data = world_data,
+       aes(x = long, 
+           y = lat)) +
+  geom_polygon(data = world_data,
+               aes(group = group),
+               color = "#faf9f5", 
+               fill = "#ECEBE7", 
+               size = 1) +
+  geom_text(data = world_labels, 
+            aes(label = country),
+            color = "#B8B7B3",
+            size = 2.5)+
+  geom_point(data = coordinates_summ %>% 
+               filter(country == "Bangladesh") %>% # remove line in PBI
+               filter(category == "Years"),
+             aes(x = longitude_site, 
+                 y = latitude_site, 
+                 color = site,
+                 size = n),
+             shape = 19,
+             alpha = 0.8)+
+  scale_size_continuous(range = c(4.5,8))+
+  scale_color_hue(l = 70, c = 40)+
+  geom_label_repel(data = coordinates_summ %>% 
+                     filter(country == "Bangladesh") %>% # remove line in PBI
+                     filter(category == "Years"),
+                   aes(label = 
+                         if(category == "Years"){
+                           paste0("Years surveyed:\n", details)
+                           } 
+                       else if(category == "Communities"){
+                         paste(n, "communities were surveyed")
+                         }
+                       else if(category == "Practices"){
+                         paste("Practices were assessed:\n",details)
+                         }
+                       else if(category == "Households participants"){
+                         paste(n,"households participated.\n",details)
+                       }
+                       else if(category == "Farmers participants"){
+                         paste(n,"farmers participated.\n",details)
+                       }
+                       else {paste0(n, "% of households had shocks, mainly:\n",details)},
+                       x = longitude_site, 
+                       y = latitude_site,
+                       color = site),
+                   size = 4,
+                   box.padding = 1,
+                   point.padding = 0,
+                   nudge_y = 0,
+                   #color = "#5D5C58",
+                   max.overlaps = Inf,
+                   direction = "both",
+                   xlim = c(-Inf, Inf),
+                   alpha = 0.5)+
+  guides(size = "none",
+        color = guide_legend(override.aes = list(size = 5)))+
+  labs(color = "Sites")+
+  theme_minimal()+
+  theme(panel.grid = element_blank(),
+        plot.background = element_rect(fill = "#faf9f5", 
+                                       color = "#faf9f5"),
+        axis.text = element_blank(),
+        axis.title = element_blank())+
+    coord_quickmap()
+
+gt <- ggplotGrob(g)
+grid.newpage()
+# Draw a rectangle with desired fill and color
+grid.draw(rectGrob(gp = gpar(fill = "#faf9f5", col ="#faf9f5" )))
+grid.draw(gt)
+
+
+
+```
+
