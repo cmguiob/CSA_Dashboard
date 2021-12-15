@@ -13,4 +13,5 @@ The dashboard allows interactivity to answer questions such as:
 In this repository you will find:
 * [**Data**](https://github.com/cmguiob/CSA_Dashboard/tree/main/Data_R): downloaded from the geofarmer App and preprocessed to a tidy format.
 * [**R code**](https://github.com/cmguiob/CSA_Dashboard/tree/main/R): used to prepare the data for ingestion into Power BI and also the scripts used within Power BI to creat the interactive visualizations.
+* [**PBI files**](https://github.com/cmguiob/CSA_Dashboard/tree/main/PBI)
 
