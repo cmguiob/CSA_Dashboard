@@ -122,7 +122,7 @@ f_ggsankey <- function(dataset = trends_dat, location, CSA_category, year_1, yea
              node = node, 
              next_node = next_node,
              fill = node)) +
-  geom_sankey(flow.alpha = 0.5,
+  geom_sankey(flow.alpha = 0.4,
               width = 0.04)+
   # Optional code to display n or percentage
   #geom_sankey_text(aes(label = count), 
@@ -135,22 +135,29 @@ f_ggsankey <- function(dataset = trends_dat, location, CSA_category, year_1, yea
                               "Implementation / use\n cases (gender)",
                               "Drivers / Reasons\n",
                               "CSA option\n"))+
-  geom_sankey_text(size = 2.5, 
+  geom_sankey_text(size = 2.5, #5.5 on dashboard
                    color = "#5D5C58",
+                   fontface = "bold",
+                   #family = "Calibri",
                    check_overlap= FALSE,
                    aes(label = node))+
-  scale_fill_hue(l = 70, c = 45, h = c(0, 360))+
-  theme_minimal()+
+  scale_fill_hue(l = 65, c = 40, h = c(0, 360))+
+  labs(caption = "*Flow's width at each category (see labels at the bottom) represents the number of replies from farmers.")+
+  theme_minimal()+ #(base_family = "Calibri") on dashboard
   theme(panel.grid = element_blank(),
         # Optional code to use plot background like in the dashboard
         #plot.background = element_rect(fill = "#faf9f5", color = "#faf9f5"),
         legend.position = "none",
         axis.text.x = element_text(
-            size = 10, 
+            size = 10,  #size 18 on dashboard
             color = "#B8B7B3", 
             vjust = 5),
         axis.text.y = element_blank(),
-        axis.title = element_blank())
+        axis.title = element_blank(),
+        plot.caption = element_text(size = 7, 
+                                    hjust = 0.95, 
+                                    margin = margin(10,0,2,0, "mm")), #size=12 on dahboard
+        plot.margin=unit(c(0,0,0,0), "mm")) # plot.margin=unit(c(0,0,4,-30), "mm") on dashboard
 
 }
 
@@ -227,71 +234,120 @@ dat_high <-  trends_dat %>%
 hchart(data_to_sankey(dat_high), "sankey")
 ```
 
-### Third visualization (alternative): alluvial plot with `ggalluvial` (CRAN)
+### Third visualization (alternative): alluvial plot with `ggalluvial` (CRAN, R > 3.5)
 
 Alluvial plots are similar to sankey plots. They differ in the fixed "box" display of the flows and also in the coloring options, which are devised to follow a given flow from start to end of the categories.
 
 [Best source for ggalluvial](https://cran.r-project.org/web/packages/ggalluvial/vignettes/ggalluvial.html)
 
-```{r plot_ggalluvial, echo = TRUE, eval=FALSE}
-library(ggalluvial)
-
-# Prepare data for ggalluvial
-dat_ggal <-  trends_dat %>%
-  select(location_type, 
-         location_name, 
-         farmer_id, 
-         gender, 
-         adopted_cases,
-         drivers,
-         practice_type,
-         exposure_weather,
-         option)  %>%
-    # Filter by location type (this will be a selection box in PBI)
-  filter(location_type == "Site") %>%
-  filter(location_name == "Fakara") %>%
-  filter(option == "Services") %>%
-  # Remove rows for practices for which farmers didn't answer
-  filter(!is.na(adopted_cases),
-         !is.na(exposure_weather)) %>%
-  #filter(!is.na(drivers)) %>%
-  mutate(location_gender = paste(location_name, paste0("(",substr(gender,1,1),")"))) %>%
-  mutate(gender, adoption_gender = paste(adopted_cases, paste0("(",substr(gender,1,1),")"))) %>%
-  distinct() %>%
-  count(location_gender, exposure_weather, adopted_cases, drivers, practice_type)
+```{r function_ggalluvial, include = TRUE, echo = TRUE}
 
 
-# Plot alluvial
-p_alluv <- ggplot(data = dat_ggal,
-       aes(y = n, 
-           axis1 = location_gender,
-           axis1 = exposure_weather, 
-           axis2 = adopted_cases,
-           axis3 = drivers,
-           axis4 = practice_type)) +
-  geom_alluvium(aes(fill = location_gender)) + #or geom_flow?
-  geom_stratum(width = 1/6, alpha = 0.5) +
-  geom_label(stat = "stratum", aes(label = after_stat(stratum)))+
+f_ggalluvial <- function(dataset = trends_dat, location, CSA_category, year_1, year_2,
+                       CSA_option = trends_dat$practice_type){
+  
+    # Error messages
+   if (!CSA_category %in% c("Practices", "Services")) 
+     stop("use either Practices or Services as CSA_category")
+  
+  if (!location %in% dataset$location_name) 
+    stop("assign a valid value to location")
+  
+  years <- dataset %>% 
+           filter(location_name %in% location, option == CSA_category) %>% 
+           select(year) %>%
+           distinct()
+  
+    if (!any(range(years) %in% seq(year_1, year_2, by=1))) 
+      stop("assign a valid year interval to the surveyed location")
+  
+  if (!missing(CSA_option)) {
+    dataset <- dataset %>% filter(practice_type %in% CSA_option)
+    if (!CSA_option %in% dataset$practice_type) 
+    stop("assign a valid CSA option for the selected location and year")
+  }
+  
+  library(ggalluvial)
+  
+  
+  # Prepare data for ggalluvial
+  dat_ggal <-  dataset %>%
+      select(year,
+             location_type, 
+             location_name, 
+             farmer_id, 
+             gender, 
+             adopted_cases,
+             drivers,
+             practice_type,
+             exposure_weather,
+             option)  %>%
+      # Filter by location type (this will be a selection box in PBI)
+      filter(location_name == location) %>%
+      filter(option == CSA_category) %>%
+      filter(year >= year_1 & year <= year_2 ) %>%
+      # Remove rows for practices for which farmers didn't answer
+      filter(!is.na(adopted_cases),
+             !is.na(exposure_weather)) %>%
+      mutate(location_gender = paste(location_name, paste0("(",substr(gender,1,1),")"))) %>%
+      mutate(adoption_gender = paste(adopted_cases, paste0("(",substr(gender,1,1),")"))) %>%
+      distinct() %>%
+      count(location_gender, exposure_weather, adoption_gender, drivers, practice_type)
+  
+  # Plot alluvial
+  ggplot(data = dat_ggal %>% filter(n>5),
+                  aes(y = n, 
+                      axis1 = location_gender,
+                      axis2 = exposure_weather, 
+                      axis3 = adoption_gender,
+                      axis4 = drivers,
+                      axis5 = practice_type)) +
+  geom_flow(aes(fill = location_gender), 
+            color = "white", 
+            size = 0.3, 
+            width = 1/15) + 
+  geom_stratum(width = 0.07, fill = "#B8B7B3",  alpha = 0.7, color = "#faf9f5", size = 0.8) +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum)), size = 2.5, color = "#5D5C58")+
   scale_x_continuous(breaks = 1:5,
                      labels = c("Farmers' replies\n by location (gender)",
                               "Exposure to\n weather shocks",
                               "Implementation / use\n cases (gender)",
                               "Drivers / Reasons\n",
                               "CSA option\n"))+
-  scale_fill_hue(l = 70, c = 45, h = c(0, 360))+
+  scale_fill_hue(l = 70, c = 45, h = c(45, 240))+
+  labs(caption = "*Flow's width at each category (see labels at the bottom) represents the number of replies from farmers. n<5 are ignored")+
   theme_minimal()+
   theme(panel.grid = element_blank(),
-        plot.background = element_rect(fill = "#faf9f5", color = "#faf9f5"),
+        # Option to use background color as in dashboard
+        #plot.background = element_rect(fill = "#faf9f5", color = "#faf9f5"),
         legend.position = "none",
         axis.text.x = element_text(
-            size = 10, 
-            color = "#B8B7B3", #this is 0.2 darkened
-            vjust = 5),
+          size = 10, 
+          color = "#B8B7B3", 
+          vjust = 5),
         axis.text.y = element_blank(),
-        axis.title = element_blank())
-    
-p_alluv
+        axis.title = element_blank(),
+        plot.caption = element_text(size = 7, hjust = 0.95, margin = margin(10,0,2,0, "mm")),
+        plot.margin=unit(c(0,10,0,10), "mm"))
+
+}
+
+
+
 
 ```
 
+### Use the function to create a ggalluvial plot 
 
+The argumens of the function take in values similar to the drop down menus used in the PBI-dashboard. To export it, first store it as an object. The `CSA_option` argument is optional: if not given, all practices will be shown for the selected site and years; alternatively, one or more practices can be selected.
+
+```{r plot_ggalluvial, include= TRUE, echo = TRUE}
+
+p_alluvial <- f_ggalluvial(location = "Doyogena", CSA_category = "Practices", year_1 = 2018, year_2 = 2021, CSA_option = c("Agroforestry", "Crop rotation"))
+
+p_alluvial
+
+# Export
+#ggsave(file = "p_alluvial.png", plot = p_alluvial, device = "png", type = "cairo", path = "Input a path from your PC", dpi = 300, width = 9.5, height = 5)
+
+```
