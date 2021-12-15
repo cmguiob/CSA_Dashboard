@@ -8,6 +8,8 @@ The dashboard allows interactivity to answer questions such as:
 * What are the drivers for adoption or dis-adoption of practices or the reasons for not using services?
 * What are the perceived effects of adopting CSA options in the livelihood, food security and gender equity of small agricultural villages?
 
+**Sneak preview!**
+
 ![dashboard gif](https://github.com/cmguiob/CSA_Dashboard/raw/main/Dashboard.gif)
 
 In this repository you will find:
