@@ -13,119 +13,224 @@ editor_options:
 
 ```{r setup, include=FALSE}
 
-knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "75%")
+knitr::opts_chunk$set(include = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.align="center", fig.showtext = TRUE, fig.retina = 1, dpi = 300, out.width = "90%")
 
 
 ```
 
 
+## Read and prepare Q1 datasets
+
+Q1 datasets are loaded by sourcing the `Prepare_Locations_Summaries.R`script. These datasets were designed to answer the questions:
+
+* Who adopted/disadopted practices?
+* Who accessed/used climate information services?
+* Which years/ practices were surveyed at each site?
+
+The Q1_practices and Q1_services datasets were processed to create summaries from them.
 
 
+```{r source, echo = TRUE}
+library(devtools)
+
+source_url("https://raw.githubusercontent.com/cmguiob/CSA_Dashboard/main/R/Prepare_Locations_Summaries.R")
+
+```
+
+## Visualization
+
+The following chunks have code to plot  located summaries about the survey (years surveyed, communities at each site and practices assessed ) and the main results of it, such as the main weather shocks experienced by households, and the percentages of adoption of practices -and use of CIS- by households and farmers. 
 
 
-```{r plot, echo = TRUE, include = TRUE}
+[Reference for world_data with ggplot](https://ggplot2.tidyverse.org/reference/map_data.html)
 
-library(grid)
-library(tidyverse)
-library(ggplot2)
-library(ggrepel)
+### Visualization choice: maps with `ggplot` (CRAN)
 
-world_data <- ggplot2::map_data('world')%>%
-  rename(country = region) %>%
-  select(-subregion) %>%
-  filter(country %in% coordinates_summ$country) %>%
-  filter(country == "Bangladesh")
+```{r function_map, echo = TRUE, include = TRUE}
 
-# Shift country names to allow labels visibility
-world_labels <- world_data %>% 
-  group_by(country) %>%
-   summarise(long = 
-               case_when(country == "Bangladesh" ~ mean(long),
-                    country == "Ethiopia" ~ mean(long),
-                    country == "Senegal" ~ mean(long),
-                    country == "Mali" ~ mean(long) - mean(long)/1.5,
-                    country == "Niger" ~ mean(long) + mean(long)/1.5), 
-             lat = 
-              case_when(country == "Bangladesh" ~ mean(lat),
-                        country == "Ethiopia" ~ mean(lat),
-                        country == "Senegal" ~ mean(lat) - mean(lat)/10,
-                        country == "Mali" ~ mean(lat) + mean(lat)/5,
-                        country == "Niger" ~ mean(lat) + mean(lat)/10))
+f_locations <- function(dataset = coordinates_summ, regn, countr, cat){
+  
+  library(tidyverse)
+  library(ggplot2)
+  library(ggrepel)
+  
+  dataset2 <-  dataset %>%
+        mutate(site = case_when(site == "Cinzana" ~ "Cinzana (MLI)",
+                                site == "Fakara" ~ "Fakara (NER)",
+                                site == "Kaffrine" ~ "Kaffrine (SEN)",
+                                site == "Lawra-Jirapa" ~ "Lawra-Jirapa (GHA)",
+                                site == "Bardiya" ~ "Bardiya (NPL)",
+                                site == "Barisal" ~ "Barisal (BGD)",
+                                site == "Khulna" ~ "Khulna (BGD)",
+                                site == "Mahottari" ~ "Mahottari (NPL)",
+                                site == "Nawalparasi" ~ "Nawalparasi (NPL)",
+                                site == "Cauca" ~ "Cauca (COL)",
+                                site == "El Tuma-La Dalia" ~ "El Tuma-La Dalia (NIC)",
+                                site == "Santa Rita" ~ "Santa Rita (HND)",
+                                site == "Olopa" ~ "Olopa (GTM)",
+                                site == "Basona Werana" ~ "Basona Werana (ETH)",
+                                site == "Doyogena" ~ "Doyogena (ETH)",
+                                site == "Hoima" ~ "Hoima (UGA)",
+                                TRUE ~ site)) %>%
+        filter(region == regn,
+               country == countr,
+               category == cat)
+        
 
-
-g <- ggplot(data = world_data,
-       aes(x = long, 
-           y = lat)) +
-  geom_polygon(data = world_data,
-               aes(group = group),
-               color = "#faf9f5", 
-               fill = "#ECEBE7", 
-               size = 1) +
-  geom_text(data = world_labels, 
-            aes(label = country),
-            color = "#B8B7B3",
-            size = 2.5)+
-  geom_point(data = coordinates_summ %>% 
-               filter(country == "Bangladesh") %>% # remove line in PBI
-               filter(category == "Years"),
-             aes(x = longitude_site, 
-                 y = latitude_site, 
-                 color = site,
-                 size = n),
-             shape = 19,
-             alpha = 0.8)+
-  scale_size_continuous(range = c(4.5,8))+
-  scale_color_hue(l = 70, c = 40)+
-  geom_label_repel(data = coordinates_summ %>% 
-                     filter(country == "Bangladesh") %>% # remove line in PBI
-                     filter(category == "Years"),
-                   aes(label = 
-                         if(category == "Years"){
-                           paste0("Years surveyed:\n", details)
-                           } 
-                       else if(category == "Communities"){
-                         paste(n, "communities were surveyed")
+  world_data <- ggplot2::map_data('world')%>%
+        rename(country = region) %>%
+        select(-subregion) %>%
+        filter(country %in% dataset2$country)
+  
+  
+  # Optional data to label countries direct over their map
+  world_labels <- world_data %>%
+        mutate(country = case_when(country == "Bangladesh" ~ "BGD",
+                                   country == "Colombia" ~ "COL",
+                                   country == "Ethiopia" ~ "ETH",
+                                   country == "Ghana" ~ "GHA",
+                                   country == "Guatemala" ~ "GTM",
+                                   country == "Honduras" ~ "HND",
+                                   country == "Mali" ~ "MLI",
+                                   country == "Nepal" ~ "NPL",
+                                   country == "Nicaragua" ~ "NIC",
+                                   country == "Niger" ~ "NER",
+                                   country == "Senegal" ~ "SEN",
+                                   country == "Uganda" ~ "UGA",
+                                   TRUE ~ country)) %>%
+        group_by(country) %>%
+        summarise(long = 
+                  case_when(country == "BGD" ~ mean(long),
+                            country == "COL" ~ mean(long),
+                            country == "ETH" ~ mean(long),
+                            country == "GHA" ~ mean(long),
+                            country == "GTM" ~ mean(long),
+                            country == "HND" ~ mean(long),
+                            country == "MLI" ~ mean(long),
+                            country == "NPL" ~ mean(long),
+                            country == "NIC" ~ mean(long),
+                            country == "NER" ~ mean(long),
+                            country == "SEN" ~ mean(long),
+                            country == "UGA" ~ mean(long)), 
+                 lat = 
+                 case_when(country == "BGD" ~ mean(lat),
+                           country == "COL" ~ mean(lat),
+                           country == "ETH" ~ mean(lat),
+                           country == "GHA" ~ mean(lat),
+                           country == "GTM" ~ mean(lat),
+                           country == "HND" ~ mean(lat),
+                           country == "MLI" ~ mean(lat),
+                           country == "NPL" ~ mean(lat),
+                           country == "NIC" ~ mean(lat),
+                           country == "NER" ~ mean(lat),
+                           country == "SEN" ~ mean(lat),
+                           country == "UGA" ~ mean(lat)))
+  # Plot
+  ggplot(data = world_data,
+         aes(x = long, 
+             y = lat)) +
+    geom_polygon(data = world_data,
+                 aes(group = group),
+                 color = "#faf9f5", 
+                 fill = "#ECEBE7", 
+                 size = 1) +
+    #geom_text(data = world_labels, 
+    #          aes(label = country),
+    #          color = "#B8B7B3",
+    #          size = 8,
+    #          face = "bold")+
+    geom_point(data = dataset2,
+               aes(x = longitude_site, 
+                   y = latitude_site, 
+                   size = n,
+                   color = site),
+               shape = 19,
+               #size = 6,
+               alpha = 0.5)+
+      scale_size_continuous(range = c(7,10))+
+      scale_color_hue(l = 70, c = 40, h = c(45, 250))+
+      scale_fill_hue(l = 70, c = 40, h = c(45, 250))+
+      geom_text_repel(data = dataset2,
+                     aes(label = 
+                           if(category == "Years"){
+                             paste0("Years surveyed:\n", details)
+                             } 
+                         else if(category == "Communities"){
+                           paste(n, "communities surveyed")
+                           }
+                         else if(category == "Practices"){
+                           paste("Practices assessed:\n",details)
+                           }
+                         else if(category == "Households"){
+                           paste(n,"households surveyed.\n",details)
                          }
-                       else if(category == "Practices"){
-                         paste("Practices were assessed:\n",details)
+                         else if(category == "Farmers"){
+                           paste(n,"farmers surveyed.\n",details)
                          }
-                       else if(category == "Households participants"){
-                         paste(n,"households participated.\n",details)
-                       }
-                       else if(category == "Farmers participants"){
-                         paste(n,"farmers participated.\n",details)
-                       }
-                       else {paste0(n, "% of households had shocks, mainly:\n",details)},
-                       x = longitude_site, 
-                       y = latitude_site,
-                       color = site),
-                   size = 4,
-                   box.padding = 1,
-                   point.padding = 0,
-                   nudge_y = 0,
-                   #color = "#5D5C58",
-                   max.overlaps = Inf,
-                   direction = "both",
-                   xlim = c(-Inf, Inf),
-                   alpha = 0.5)+
-  guides(size = "none",
-        color = guide_legend(override.aes = list(size = 5)))+
-  labs(color = "Sites")+
-  theme_minimal()+
-  theme(panel.grid = element_blank(),
-        plot.background = element_rect(fill = "#faf9f5", 
-                                       color = "#faf9f5"),
-        axis.text = element_blank(),
-        axis.title = element_blank())+
-    coord_quickmap()
-
-gt <- ggplotGrob(g)
-grid.newpage()
-# Draw a rectangle with desired fill and color
-grid.draw(rectGrob(gp = gpar(fill = "#faf9f5", col ="#faf9f5" )))
-grid.draw(gt)
-
+                         else {paste0(n, "% of households had shocks.\n From them:\n",details)},
+                         x = longitude_site, 
+                         y = latitude_site,
+                         color = site),
+                     show_guide=F,
+                     size = 3,
+                     #fontface = "bold",
+                     box.padding = if (dataset2$region == "South Asia"){2.5} else {3.5},
+                     force = if (dataset2$region == "Latina America"){3.5} 
+                             else if (dataset2$region == "South Asia") {4}
+                             else if (dataset2$region == "West Africa") {3}
+                             else {4},
+                     point.padding = 1.5,
+                     #nudge_y = -0.5,
+                     nudge_x = 0.1,
+                     #color = "#5D5C58",
+                     max.overlaps = Inf,
+                     direction = "both",
+                     xlim = c(-Inf, Inf))+
+    guides(size = "none",
+          color = guide_legend(override.aes = list(size = 8)))+
+    labs(color = "Sites",
+         caption = if(dataset2$category == "Practices"){"*m = practice has mitigation features, g: gender impact"})+
+    theme_minimal()+
+    theme(panel.grid = element_blank(),
+          # Optional to use same background as in dashboard
+          #plot.background = element_rect(fill = "#faf9f5", color = "#faf9f5"),
+          legend.text = element_text(size = 11, 
+                                      color = "#5D5C58"),
+          legend.title = element_text(size = 11,
+                                      color = "#B8B7B3",
+                                      face = "bold"),
+          legend.key.size = unit(1.5, 'lines'),
+          legend.justification = "top",
+          legend.position = "bottom",
+          plot.caption = element_text(size = 7, 
+                                      hjust = 1, 
+                                      margin = margin(5,0,5,0, "mm")),
+          axis.text = element_blank(),
+          axis.title = element_blank(),
+          plot.margin = unit(if (dataset2$region == "South Asia"){c(0,20,0,-20)}
+                             else if (dataset2$region == "West Africa"){c(0,15,0,35)}
+                             else {c(0,10,0,15)}, "mm"))+
+      coord_quickmap(clip = "off")
+  
+  
+}
 
 
 ```
 
+
+### Use the function to create a map with summaries
+
+The argumens of the function take in values similar to the drop down menus used in the PBI-dashboard. The argument `rgn`: region, `countr`:country, `cat`:category.
+
+
+```{r plot_ggsankey, include= TRUE, echo = TRUE}
+
+p_locations <- f_locations(regn = "East Africa", countr = "Ethiopia", cat = "Practices")
+
+p_locations
+
+# Export
+#ggsave(file = "p_sankey.png", plot = p_sankey, device = "png", type = "cairo", path = "Input a path from your PC, dpi = 300, width = 9.5, height = 5)
+
+```
