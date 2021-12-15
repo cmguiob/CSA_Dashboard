@@ -48,7 +48,7 @@ The following chunks have code to plot  located summaries about the survey (year
 
 ```{r function_map, echo = TRUE, include = TRUE}
 
-f_locations <- function(dataset = coordinates_summ, regn, countr, cat){
+f_locations <- function(dataset = locations_dat, regn, countr, cat){
   
   library(tidyverse)
   library(ggplot2)

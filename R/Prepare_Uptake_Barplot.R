@@ -203,6 +203,10 @@ uptake_dat <- coordinates %>%
 
 #------------------------Export dataset for plotting ----------------------------------------------
 
+# Remove all objects but coordinates summ
+rm(list =setdiff(ls(), "uptake_dat"))
+
+
 # Write a compressed csv file
 write_csv(uptake_dat, here::here("PBI","Data_PBI","uptake.csv"))
 

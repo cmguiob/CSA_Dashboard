@@ -587,7 +587,7 @@ coordinates <- read_csv(url_coords)
 details_communities <- aggregate(community ~ site, unique(coordinates), paste, collapse = "\n ") 
 
 # Join summaries with coordinates
-coordinates_summ <- coordinates %>%
+locations_dat <- coordinates %>%
   #Copute coordinates for site
   group_by(site) %>%
   mutate(latitude_site = mean(latitude),
@@ -621,15 +621,14 @@ coordinates_summ <- coordinates %>%
   )) %>%
   select(-community, -year, -practice_type, -adoptant_hh_g_perc, -adoptant_frm_g_perc, - weather_details, - access_hh_perc, - access_frm_perc)
 
-coordinates_summ
 
 
 #--------------------------- Export dataset for plotting ----------------------------------
 
 # Remove all objects but coordinates summ
-rm(list =setdiff(ls(), "coordinates_summ"))
+rm(list =setdiff(ls(), "locations_dat"))
 
 # Write a compressed csv file
-write_csv(coordinates_summ, here::here("PBI","Data_PBI","locations.csv"))
+write_csv(locations_dat, here::here("PBI","Data_PBI","locations.csv"))
 
 

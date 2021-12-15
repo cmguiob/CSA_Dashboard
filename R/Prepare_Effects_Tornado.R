@@ -212,6 +212,10 @@ rm(effect_practices, effect_services, n_site_implemented, n_site_used)
 
 #------------------------Export dataset for plotting ----------------------------------------------
 
+# Remove all objects but coordinates summ
+rm(list =setdiff(ls(), "effect_dat"))
+
+
 # Write a compressed csv file
 write_csv(effect_dat, here::here("PBI","Data_PBI","effects.csv"))
 
