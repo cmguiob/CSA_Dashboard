@@ -46,7 +46,6 @@ Q1_practices <- read_csv(files_paths[1]) %>%
          adopted_cases,
          drivers) %>%
   filter(!is.na(drivers)) %>%
-  filter(location_type == "Site")
   mutate(option = "Practices",
          # Correct farmer_id which have two genders 
          farmer_id = case_when(
@@ -84,7 +83,6 @@ Q1_services <- read_csv(files_paths[2]) %>%
          adopted_cases,
          drivers) %>%
   # Remove rows for cases where driver is NA (adopted_case is HEARD about it)
-  filter(location_type == "Site") %>%
   filter(!is.na(drivers)) %>%
   filter(subtype != "No service") %>%
   mutate(option = "Services",
@@ -112,7 +110,7 @@ Q1_services <- read_csv(files_paths[2]) %>%
   mutate_if(is.character,as.factor) %>%
   select(-subtype)
 
-trends_dat <- bind_rows(Q1_practices, Q1_services)
+trends_dat <- bind_rows(Q1_practices, Q1_services) %>%  filter(location_type == "Site")
 
 
 #------------------------Export dataset for plotting ----------------------------------------------
