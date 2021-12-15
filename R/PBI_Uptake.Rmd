@@ -127,7 +127,7 @@ f_map <- function(dataset = uptake_dat, CSA_category, type, subtype, year_1, yea
 
 ```
 
-### Use the function to create a barplot 
+### Use the function to create a map
 
 The argumens of the function take in values similar to the drop down menus used in the PBI-dashboard. To export it, first store it as an object. The `location` argument is optional: if not given, all places will be shown for the practice and years; alternatively, one or more places can be selected.
 
@@ -142,6 +142,65 @@ p_map
 #ggsave(file = "p_map.png", plot = p_map, device = "png", type = "cairo", path = "Input a path from your PC, dpi = 300, width = 9.5, height = 5)
 
 ```
+
+### Visaulization choice (optional): text box with `ggtext`(CRAN, R > 3.5)
+
+In the next chuck you will find a function that allows to plot a text box with the description of a given practice subtype.
+
+```{r}
+
+f_textbox <- function(dataset = uptake_dat, sub){
+  
+  if (!sub %in% dataset$subtype) 
+    stop("assign a valid practice subtype")
+  
+  library(ggplot2)
+  library(ggtext)
+  library(tidyverse)
+  library(grid)
+  
+  ggplot(data = dataset %>% filter(subtype == sub)) +
+  geom_textbox(
+    aes(x = 0.01, 
+        y = 1, 
+        label = description),
+    width = grid::unit(0.9, "npc"), # 73% of plot panel width
+    hjust = 0, 
+    vjust = 1,
+    fill = "#faf9f5",
+    colour = "#5D5C58",
+    size = 8,
+    box.colour = "#faf9f5") +
+  xlim(0, 1) +
+  ylim(0, 1) +
+  theme(panel.grid = element_blank(),
+        plot.background = element_rect(fill = "#faf9f5", 
+                                       color = "#faf9f5"),
+        axis.title = element_blank(),
+        axis.text = element_blank()) 
+  
+}
+
+
+```
+
+
+### Use the function to create a text box
+
+The argumens of the function take in values similar to the drop down menus used in the PBI-dashboard. To export it, first store it as an object. 
+
+
+```{r map, include= TRUE, echo = TRUE}
+
+p_textbox <- f_textbox(sub = "Tree planting")
+
+p_textbox
+
+# Export
+#ggsave(file = "p_textbox.png", plot = p_map, device = "png", type = "cairo", path = "Input a path from your PC, dpi = 300, width = 9.5, height = 5)
+
+```
+
 
 ### Visualization choice: barplot with `ggplot` (CRAN), faceted by site and year.
 
